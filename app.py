@@ -8,43 +8,43 @@ import os
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# 🎯 核心樣式設定：精準控制紅框（放大）與藍框（縮小）的字體比例，自動適應深淺色模式
+# 🎯 核心修正：將紅框部分的字體尺寸（WidgetLabel、Select Value）再度往上放大，其餘藍框與內文保持不動
 st.markdown(
     """
     <style>
-    /* 1. 紅框：將「1. 請選擇歌手名稱：」與「2. 請選擇歌曲名稱：」的標題字體顯著放大 */
+    /* 1. 紅框：將「1. 請選擇歌手名稱：」與「2. 請選擇歌曲名稱：」的標題字體再度放大 */
     div[data-testid="stWidgetLabel"] p {
-        font-size: 30px !important;
+        font-size: 36px !important;  /* 從 30px 再度放大到 36px */
         font-weight: bold !important;
         line-height: 1.6 !important;
     }
     
-    /* 1. 紅框：將選單框框內顯示的文字（如：周杰倫、--- 請展開選擇歌曲 ---）一併同步放大 */
+    /* 1. 紅框：將選單框框內顯示的選中文字（如：周杰倫、--- 請展開選擇歌曲 ---）同步再度放大 */
     div[data-baseweb="select"] div p {
-        font-size: 26px !important;
+        font-size: 32px !important;  /* 從 26px 再度放大到 32px */
         font-weight: bold !important;
     }
     
-    /* 1. 紅框：將點開下拉選單後彈出來的清單項目文字也放大 */
+    /* 1. 紅框：將點開下拉選單後彈出來的清單項目文字同步放大 */
     ul[role="listbox"] li div {
-        font-size: 26px !important;
+        font-size: 32px !important;  /* 同步放大到 32px */
         font-weight: bold !important;
-        padding-top: 10px !important;
-        padding-bottom: 10px !important;
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
     }
     
-    /* 2. 藍框：將「📱 點我展開現場專用 QR Code」折疊按鈕的字體稍微縮小一點點，使其不喧賓奪主 */
+    /* 2. 藍框保持原樣：維持在 18px */
     .stExpander details summary p {
         font-size: 18px !important;
         font-weight: 500 !important;
     }
     
-    /* 加大選單觸控高度，方便點擊 */
+    /* 加大選單觸控高度，方便大字體呈現與手指點擊 */
     div[data-baseweb="select"] {
-        min-height: 60px !important;
+        min-height: 70px !important;
     }
     
-    /* 歌詞內文大字體優化 */
+    /* 歌詞內文大字體保持原樣 */
     div[data-testid="stText"] {
         font-size: 24px !important;
         line-height: 2 !important;
@@ -67,7 +67,7 @@ if not os.path.exists(DATA_FILE):
         "歌詞": [
             "故事的小黃花 從出生那年就飄著\n童年的蕩秋千 隨記憶一直晃到現在\n吹著前奏望著天空 我想起花瓣試著掉落",
             "親愛的 愛上你 從那天起\n甜蜜的很輕易\n親愛的 別任性 你的眼睛\n在說我願意",
-            "突然好想死 你會在哪裡\n過得快樂或委屈\n突然好想你 突然鋒利的回憶\n突然模糊的眼睛",
+            "突然好想你 你會在哪裡\n過得快樂或委屈\n突然好想你 突然鋒利的回憶\n突然模糊的眼睛",
             "你總是要我乖 張開雙手帶到未來\n如果你善解人意 怎麼不明白\n我們的愛太無奈 總是承載著太多期盼",
             "我會披星戴月的想你\n我會奮不顧身地前進\n遠方煙火點燃你的心\n照亮我的一線生機"
         ]
@@ -139,8 +139,8 @@ else:
     st.markdown("---")
     
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
-        # 🎯 網址精準固定鎖定：這一次絕對鎖定您的完整真實網域！
-        current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
+        # 🎯 網址精準固定鎖定：您的專屬完整真實網域
+        current_url = "https://streamlit.app"
             
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(current_url)
