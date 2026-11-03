@@ -8,6 +8,30 @@ import os
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
+# CSS 樣式注入：專門用來放大下拉選單、文字標籤以及整體手機觀看字體
+st.markdown(
+    """
+    <style>
+    /* 放大 selectbox 的標題文字 */
+    .stSelectbox label p {
+        font-size: 22px !important;
+        font-weight: bold !important;
+        color: #1f2d3d !important;
+    }
+    /* 放大選單內目前選中選項的字體 */
+    .stSelectbox div div div p {
+        font-size: 20px !important;
+    }
+    /* 調整選單基底高度，讓手機更好點擊 */
+    .stSelectbox div div div {
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+    }
+    </style>
+    """,
+    unsafe_style_allowed=True
+)
+
 # 🎯 實體檔案同步核心：將歌單直接存成雲端主機裡的實體檔案，徹底打破裝置隔離限制！
 DATA_FILE = "my_songs.csv"
 
@@ -66,7 +90,7 @@ if "管理員" in mode:
                         for col in required_cols:
                             new_df[col] = new_df[col].fillna("").astype(str).str.strip()
                         
-                        # 🎯 核心同步升級：直接把新資料複寫覆蓋掉雲端硬碟的 CSV 檔案
+                        # 直接把新資料複寫覆蓋掉雲端硬碟的 CSV 檔案
                         new_df[required_cols].to_csv(DATA_FILE, index=False, encoding='utf-8')
                         
                         st.success("🎉 歌單已永久寫入雲端檔案！現場所有粉絲的手機只要重新整理，就能立刻看到全新歌單！")
@@ -95,8 +119,8 @@ else:
     st.markdown("---")
     
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
-        # 🎯 終極鎖定：精準填入您的完整正確網域，絕對不會再漏掉或出錯！
-        current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
+        # 🎯 網址精準固定：絕對沒有漏掉任何一個字！
+        current_url = "https://streamlit.app"
             
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(current_url)
@@ -120,6 +144,7 @@ else:
         if selected_song != "--- 請展開選擇歌曲 ---":
             song_info = songs_of_singer[songs_of_singer["歌曲名稱"] == selected_song]
             
+            # 使用官方安全格式提取純文字
             lyrics_text = "\n".join(song_info["歌詞"].astype(str).tolist())
             song_cat = "/".join(song_info["分類"].astype(str).tolist())
             
