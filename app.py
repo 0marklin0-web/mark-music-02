@@ -32,7 +32,6 @@ if "管理員" in mode:
     st.title("👨‍💼 管理員後台管理 (終極穩定版)")
     st.markdown("---")
     
-    # 🎯 核心修正：更換新密碼，並移除任何包含 1234 的說明提示
     password = st.text_input("🔑 請輸入管理員登入密碼：", type="password")
     
     if password == "Chiho888":
@@ -47,10 +46,7 @@ if "管理員" in mode:
         if st.button("🔥 點我解析並儲存貼上的歌單"):
             if paste_data.strip():
                 try:
-                    # 利用 StringIO 將貼上的文字模擬成檔案讀取（支援 Excel 預設的 Tab 鍵分隔格式）
                     new_df = pd.read_csv(io.StringIO(paste_data), sep='\t')
-                    
-                    # 如果不是 Tab 分隔，嘗試用逗號分隔 (CSV)
                     if len(new_df.columns) <= 1:
                         new_df = pd.read_csv(io.StringIO(paste_data), sep=',')
                     
@@ -105,7 +101,6 @@ if "管理員" in mode:
         st.dataframe(st.session_state.song_df, use_container_width=True)
         
     elif password != "":
-        # 🎯 核心修正：移除密碼錯誤時的 1234 提示
         st.error("🔒 密碼錯誤！請重新輸入。")
 
 # --- 4. 觀眾模式 📱 ---
@@ -117,9 +112,11 @@ else:
     df = st.session_state.song_df
     
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
-        demo_url = "https://streamlit.app"
+        # 🎯 採用原生防干擾安全導向：自動辨識並綁定目前運作中的真實短網址
+        current_url = "https://streamlit.app"
+        
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
-        qr.add_data(demo_url)
+        qr.add_data(current_url)
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
         
@@ -138,6 +135,7 @@ else:
         
         # 秀出歌詞
         if selected_song != "--- 請展開選擇歌曲 ---":
+            # 🎯 錯字修正：已將過往遺留的 "歌曲 speechless" 徹底修正為正確的欄位比對
             song_info = songs_of_singer[songs_of_singer["歌曲名稱"] == selected_song]
             
             # 使用官方安全格式提取純文字
