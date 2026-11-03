@@ -36,13 +36,19 @@ if "管理員" in mode:
     if password == "1234":
         st.success("🔓 認證成功！您現在可以更新歌單資料。")
         
-        uploaded_file = st.file_uploader("📥 請上傳您的 Excel 歌單檔案 (.xlsx)", type=["xlsx"])
+        # 額外提醒使用者排除 403 錯誤
+        st.info("💡 如果上傳時出現「AxiosError 403」，請使用 Google Chrome 瀏覽器操作，並關閉無痕模式。")
+        
+        uploaded_file = st.file_uploader("📥 請上傳您的歌單檔案 (.xlsx 或 .csv)", type=["xlsx", "csv"], key="file_uploader_unique")
         
         if uploaded_file is not None:
             try:
-                new_df = pd.read_excel(uploaded_file, engine='openpyxl')
+                if uploaded_file.name.endswith('.csv'):
+                    new_df = pd.read_csv(uploaded_file, encoding='utf-8')
+                else:
+                    new_df = pd.read_excel(uploaded_file, engine='openpyxl')
+                    
                 new_df.dropna(how='all', inplace=True)
-                
                 new_df.columns = [str(col).strip() for col in new_df.columns]
                 
                 required_cols = ["歌手名稱", "歌曲名稱", "歌詞", "分類"]
@@ -56,7 +62,7 @@ if "管理員" in mode:
                     st.success("🎉 歌單全數更新成功！切換回觀眾模式即可看到新歌單。")
                     st.balloons()
                 else:
-                    st.error(f"❌ 錯誤：Excel 欄位名稱不符！您的 Excel 檔案缺少了：{', '.join(missing_cols)}")
+                    st.error(f"❌ 錯誤：檔案欄位名稱不符！您的檔案缺少了：{', '.join(missing_cols)}")
             except Exception as e:
                 st.error(f"❌ 讀取檔案時發生底層錯誤: {e}")
                 
@@ -98,16 +104,15 @@ else:
         if selected_song != "--- 請展開選擇歌曲 ---":
             song_info = songs_of_singer[songs_of_singer["歌曲名稱"] == selected_song]
             
-            # 🎯 採用最安全的序列提值，確保抓出來是純字串，且不使用內嵌 HTML
-            lyrics_text = str(song_info["歌詞"].values[0])
-            song_cat = str(song_info["分類"].values[0])
+            # 使用官方安全格式提取純文字
+            lyrics_text = "\n".join(song_info["歌詞"].astype(str).tolist())
+            song_cat = "/".join(song_info["分類"].astype(str).tolist())
             
             st.markdown("---")
             st.markdown(f"## 🎤 {selected_singer}  • 《 {selected_song} 》")
             if song_cat.strip():
                 st.caption(f"📁 歌曲分類：{song_cat}")
             
-            # 🎯 改用官方原生大字體安全元件呈現歌詞，絕不崩潰且支援自動換行
             st.info("🎵 完整歌詞內容：")
             st.text(lyrics_text)
             st.markdown("---")
