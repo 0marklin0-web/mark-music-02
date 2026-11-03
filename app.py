@@ -28,7 +28,7 @@ st.sidebar.title("⚙️ 模式切換面板")
 mode = st.sidebar.radio("請選擇當前模式：", ["觀眾模式 📱 (粉絲看歌詞)", "管理員模式 🔑 (後台上傳)"])
 
 # --- 3. 管理員模式 🔑 ---
-if "管理員" in mode":
+if mode == "管理員模式 🔑 (後台上傳)":
     st.title("👨‍💼 管理員後台管理")
     st.markdown("---")
     
