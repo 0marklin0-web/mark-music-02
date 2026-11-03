@@ -75,7 +75,7 @@ else:
     # QR Code 區塊
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
         # 這裡會自動產生一個範例網址的 QR code
-        demo_url = https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/
+        demo_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(demo_url)
         qr.make(fit=True)
