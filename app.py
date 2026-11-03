@@ -40,11 +40,9 @@ if "管理員" in mode:
         
         if uploaded_file is not None:
             try:
-                # 核心修正：明確指定 openpyxl 引擎讀取
                 new_df = pd.read_excel(uploaded_file, engine='openpyxl')
                 new_df.dropna(how='all', inplace=True)
                 
-                # 清理標頭空格
                 new_df.columns = [str(col).strip() for col in new_df.columns]
                 
                 required_cols = ["歌手名稱", "歌曲名稱", "歌詞", "分類"]
@@ -100,9 +98,9 @@ else:
         if selected_song != "--- 請展開選擇歌曲 ---":
             song_info = songs_of_singer[songs_of_singer["歌曲名稱"] == selected_song]
             
-            # 💡 核心修正：使用 .iloc[0] 精準抓取第一個元素的「純字串」，防止 TypeError
-            lyrics_text = str(song_info["歌詞"].iloc[0])
-            song_cat = str(song_info["分類"].iloc[0])
+            # 🎯 終極修正：改用 .values[0] 確保只提取純文字，徹底根除 TypeError
+            lyrics_text = str(song_info["歌詞"].values[0])
+            song_cat = str(song_info["分類"].values[0])
             
             st.markdown("---")
             st.markdown(f"### 🎤 {selected_singer}  • 《 {selected_song} 》")
