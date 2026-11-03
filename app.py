@@ -15,13 +15,13 @@ DATA_FILE = "my_songs.csv"
 if not os.path.exists(DATA_FILE):
     default_data = {
         "歌手名稱": ["周杰倫", "周杰倫", "五月天", "蔡依林", "告五人"],
-        "歌曲名稱": ["晴天", "告白氣球", "突然好想你", "倒帶", "披星戴月的想你"],
+        "歌曲名稱": ["晴天", "告白氣球", "突然好想記", "倒帶", "披星戴月的想你"],
         "分類": ["國語流行", "國語流行", "經典樂團", "國語流行", "獨立樂團"],
         "歌詞": [
             "故事的小黃花 從出生那年就飄著\n童年的蕩秋千 隨記憶一直晃到現在\n吹著前奏望著天空 我想起花瓣試著掉落",
             "親愛的 愛上你 從那天起\n甜蜜的很輕易\n親愛的 別任性 你的眼睛\n在說我願意",
-            "突然好想你 你會在哪裡\n過得快樂或委屈\n突然好想你 突然鋒利的回憶\n突然模糊的眼睛",
-            "你總是要我乖 張開雙手帶我到未來\n如果你善解人意 怎麼不明白\n我們的愛太無奈 總是承載著太多期盼",
+            "突然好想死 你會在哪裡\n過得快樂或委屈\n突然好想你 突然鋒利的回憶\n突然模糊的眼睛",
+            "你總是要我乖 張開雙手帶到未來\n如果你善解人意 怎麼不明白\n我們的愛太無奈 總是承載著太多期盼",
             "我會披星戴月的想你\n我會奮不顧身地前進\n遠方煙火點燃你的心\n照亮我的一線生機"
         ]
     }
@@ -79,8 +79,8 @@ else:
     st.markdown("---")
     
     with st.expander("📱 點我展開現場專用 QR Code"):
-        # 🎯 網址精準固定鎖定，絕不漏字
-        current_url = "https://streamlit.app"
+        # 🎯 網址精準固定鎖定：您的專屬完整真實網域，絕不再漏字、不漏符號
+        current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(current_url)
         qr.make(fit=True)
@@ -89,13 +89,13 @@ else:
         img.save(buf)
         st.image(buf.getvalue(), caption="現場觀眾掃描此碼即可進入此點歌本", width=180)
 
-    # 💡 利用全新 Session State 來記錄長輩點選了哪位歌手與歌曲
+    # 利用全新 Session State 來記錄長輩點選了哪位歌手與歌曲
     if "chosen_singer" not in st.session_state:
         st.session_state.chosen_singer = None
     if "chosen_song" not in st.session_state:
         st.session_state.chosen_song = None
 
-    # 🎯 第一層：用大標題引導選擇歌手
+    # 第一層：用大標題引導選擇歌手
     st.markdown("## 🎤 1. 請點選歌手選單：")
     
     # 獲取歌手清單
@@ -103,14 +103,13 @@ else:
     
     # 用排版將按鈕變大，一個歌手一條大按鈕
     for singer in singers:
-        # 如果是當前選中的歌手，按鈕會呈現不同視覺（用箭頭標註）
         label_text = f"👉 【 {singer} 】 👈" if st.session_state.chosen_singer == singer else f"👤 {singer}"
         if st.button(label_text, key=f"btn_singer_{singer}", use_container_width=True):
             st.session_state.chosen_singer = singer
             st.session_state.chosen_song = None  # 切換歌手時重設歌曲
             st.rerun()
 
-    # 🎯 第二層：如果選了歌手，秀出該歌手的所有歌曲大按鈕
+    # 第二層：如果選了歌手，秀出該歌手的所有歌曲大按鈕
     if st.session_state.chosen_singer:
         st.markdown("---")
         st.markdown(f"## 🎶 2. 歌手【{st.session_state.chosen_singer}】的歌曲清單：")
@@ -123,7 +122,7 @@ else:
                 st.session_state.chosen_song = song
                 st.rerun()
 
-    # 🎯 第三層：如果選了歌曲，秀出極大字體、最適合長輩閱讀的精美歌詞
+    # 第三層：如果選了歌曲，秀出極大字體、最適合長輩閱讀的精美歌詞
     if st.session_state.chosen_song and st.session_state.chosen_singer:
         st.markdown("---")
         song_info = df[(df["歌手名稱"] == st.session_state.chosen_singer) & (df["歌曲名稱"] == st.session_state.chosen_song)]
