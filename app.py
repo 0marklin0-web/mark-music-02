@@ -32,7 +32,7 @@ if "管理員" in mode:
     st.title("👨‍💼 管理員後台管理 (終極穩定版)")
     st.markdown("---")
     
-    password = st.text_input("🔑 請輸入管理員登入密碼：", type="password", help="預設測試密碼請輸入：Chiho888")
+    password = st.text_input("🔑 請輸入管理員登入密碼：", type="password", help="預設測試密碼請輸入：1234")
     
     if password == "1234":
         st.success("🔓 認證成功！您現在可以更新歌單資料。")
