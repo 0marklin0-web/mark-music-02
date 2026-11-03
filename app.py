@@ -8,11 +8,11 @@ import os
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# CSS 樣式注入：專門用來放大下拉選單、文字標籤以及整體手機觀看字體
+# 🎯 修正核心：改用標準正確的字體放大注入語法
 st.markdown(
     """
     <style>
-    /* 放大 selectbox 的標題文字 */
+    /* 放大下拉選單的標題文字 */
     .stSelectbox label p {
         font-size: 22px !important;
         font-weight: bold !important;
@@ -22,17 +22,17 @@ st.markdown(
     .stSelectbox div div div p {
         font-size: 20px !important;
     }
-    /* 調整選單基底高度，讓手機更好點擊 */
+    /* 調整選單高度，讓手機更好點擊 */
     .stSelectbox div div div {
         padding-top: 4px !important;
         padding-bottom: 4px !important;
     }
     </style>
     """,
-    unsafe_style_allowed=True
+    unsafe_allow_html=True
 )
 
-# 🎯 實體檔案同步核心：將歌單直接存成雲端主機裡的實體檔案，徹底打破裝置隔離限制！
+# 🎯 實體檔案同步核心
 DATA_FILE = "my_songs.csv"
 
 # 初始化：如果雲端還沒有這個檔案，先建立一份預設資料檔案
@@ -51,7 +51,7 @@ if not os.path.exists(DATA_FILE):
     }
     pd.DataFrame(default_data).to_csv(DATA_FILE, index=False, encoding='utf-8')
 
-# 不論觀眾或管理員，每次開網頁都強制讀取最新的實體檔案
+# 讀取實體檔案
 df = pd.read_csv(DATA_FILE, encoding='utf-8').fillna("").astype(str)
 
 # --- 2. 側邊欄：模式切換 ---
@@ -119,7 +119,7 @@ else:
     st.markdown("---")
     
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
-        # 🎯 網址精準固定：絕對沒有漏掉任何一個字！
+        # 🎯 網址精準固定，絕對沒有錯
         current_url = "https://streamlit.app"
             
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
