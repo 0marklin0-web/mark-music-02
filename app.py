@@ -112,9 +112,9 @@ else:
     df = st.session_state.song_df
     
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
-        # 🎯 採用原生防干擾安全導向：自動辨識並綁定目前運作中的真實短網址
-        current_url = "https://streamlit.app"
-        
+        # 🎯 核心修正：直接寫死綁定您的完整真實網址，最直覺、最安全
+        current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
+            
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(current_url)
         qr.make(fit=True)
@@ -135,7 +135,6 @@ else:
         
         # 秀出歌詞
         if selected_song != "--- 請展開選擇歌曲 ---":
-            # 🎯 錯字修正：已將過往遺留的 "歌曲 speechless" 徹底修正為正確的欄位比對
             song_info = songs_of_singer[songs_of_singer["歌曲名稱"] == selected_song]
             
             # 使用官方安全格式提取純文字
