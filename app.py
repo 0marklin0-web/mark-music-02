@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import qrcode
 from io import BytesIO
+import io
 
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
@@ -28,7 +29,7 @@ mode = st.sidebar.radio("請選擇當前模式：", ["觀眾模式 📱 (粉絲�
 
 # --- 3. 管理員模式 🔑 ---
 if "管理員" in mode:
-    st.title("👨‍💼 管理員後台管理")
+    st.title("👨‍💼 管理員後台管理 (終極穩定版)")
     st.markdown("---")
     
     password = st.text_input("🔑 請輸入管理員登入密碼：", type="password", help="預設測試密碼請輸入：1234")
@@ -36,10 +37,44 @@ if "管理員" in mode:
     if password == "1234":
         st.success("🔓 認證成功！您現在可以更新歌單資料。")
         
-        # 額外提醒使用者排除 403 錯誤
-        st.info("💡 如果上傳時出現「AxiosError 403」，請使用 Google Chrome 瀏覽器操作，並關閉無痕模式。")
+        st.markdown("### 📋 方式一：複製貼上更新（💯 最穩定，100% 成功）")
+        st.info("💡 說明：打開您的 Excel 或 CSV 歌單，直接**全選（Ctrl+A）並複製（Ctrl+C）**，然後把內容直接貼在下方的大框框中即可！")
         
-        uploaded_file = st.file_uploader("📥 請上傳您的歌單檔案 (.xlsx 或 .csv)", type=["xlsx", "csv"], key="file_uploader_unique")
+        # 建立大文字貼上區
+        paste_data = st.text_area("📥 請在此處貼上您從 Excel 複製的全部歌單內容：", height=200, placeholder="歌手名稱\t歌曲名稱\t分類\t歌詞\n周杰倫\t晴天\t國語流行\t故事的小黃花...")
+        
+        if st.button("🔥 點我解析並儲存貼上的歌單"):
+            if paste_data.strip():
+                try:
+                    # 利用 StringIO 將貼上的文字模擬成檔案讀取（支援 Excel 預設的 Tab 鍵分隔格式）
+                    new_df = pd.read_csv(io.StringIO(paste_data), sep='\t')
+                    
+                    # 如果不是 Tab 分隔，嘗試用逗號分隔 (CSV)
+                    if len(new_df.columns) <= 1:
+                        new_df = pd.read_csv(io.StringIO(paste_data), sep=',')
+                    
+                    new_df.dropna(how='all', inplace=True)
+                    new_df.columns = [str(col).strip() for col in new_df.columns]
+                    
+                    required_cols = ["歌手名稱", "歌曲名稱", "歌詞", "分類"]
+                    missing_cols = [col for col in required_cols if col not in new_df.columns]
+                    
+                    if not missing_cols:
+                        for col in required_cols:
+                            new_df[col] = new_df[col].fillna("").astype(str).str.strip()
+                        st.session_state.song_df = new_df[required_cols]
+                        st.success("🎉 歌單透過文字解析成功！切換回觀眾模式即可看到新歌單。")
+                        st.balloons()
+                    else:
+                        st.error(f"❌ 欄位不符！貼上的內容必須包含這四個標題：歌手名稱、歌曲名稱、歌詞、分類。目前缺少：{', '.join(missing_cols)}")
+                except Exception as e:
+                    st.error(f"❌ 解析失敗，請確保您是從 Excel 中完整複製包含標頭的表格。錯誤訊息: {e}")
+            else:
+                st.warning("⚠️ 框框內目前沒有內容，請先貼上資料。")
+                
+        st.markdown("---")
+        st.markdown("### 📂 方式二：傳統檔案上傳 (若您的網路已被解除阻擋可使用)")
+        uploaded_file = st.file_uploader("📥 上傳歌單檔案 (.xlsx 或 .csv)", type=["xlsx", "csv"], key="file_uploader_backup")
         
         if uploaded_file is not None:
             try:
@@ -57,14 +92,13 @@ if "管理員" in mode:
                 if not missing_cols:
                     for col in required_cols:
                         new_df[col] = new_df[col].fillna("").astype(str).str.strip()
-                    
                     st.session_state.song_df = new_df[required_cols]
-                    st.success("🎉 歌單全數更新成功！切換回觀眾模式即可看到新歌單。")
+                    st.success("🎉 檔案上傳更新成功！")
                     st.balloons()
                 else:
-                    st.error(f"❌ 錯誤：檔案欄位名稱不符！您的檔案缺少了：{', '.join(missing_cols)}")
+                    st.error(f"❌ 錯誤：檔案欄位名稱不符！缺少：{', '.join(missing_cols)}")
             except Exception as e:
-                st.error(f"❌ 讀取檔案時發生底層錯誤: {e}")
+                st.error(f"❌ 讀取檔案錯誤: {e}")
                 
         st.write("📊 **目前系統內的歌單總覽 (共 {} 首)：**".format(len(st.session_state.song_df)))
         st.dataframe(st.session_state.song_df, use_container_width=True)
