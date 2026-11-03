@@ -8,34 +8,37 @@ import os
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# 🎯 核心樣式修正：將引導大標題與大按鈕文字微調縮小至舒適適中的大小
+# 🎯 核心樣式修正：將大按鈕的上下高度與外距（間距）極致縮小，讓排版更緊湊
 st.markdown(
     """
     <style>
-    /* 1. 將選單的導引大標題（1. 請點選歌手選單...）微調縮小 */
+    /* 1. 將選單的導引大標題微調 */
     h2 {
-        font-size: 26px !important;  /* 從 36px 縮小至 26px */
+        font-size: 24px !important;
         font-weight: bold !important;
         color: inherit !important;
-        margin-top: 15px !important;
-        margin-bottom: 15px !important;
+        margin-top: 10px !important;
+        margin-bottom: 8px !important;
     }
     
-    /* 2. 將大按鈕（st.button）內部的歌手與歌曲選單字體微調縮小 */
+    /* 2. 大按鈕內部的字體大小維持舒適度 */
     div.stButton > button p {
-        font-size: 22px !important;  /* 從 32px 縮小至 22px */
+        font-size: 20px !important;
         font-weight: bold !important;
     }
     
-    /* 3. 調整大按鈕的上下高度，使其外觀更精緻舒適 */
+    /* 3. 🎯 核心修正：將按鈕的高度與間距縮小，讓排版更緊湊、更好塞 */
     div.stButton > button {
-        min-height: 55px !important;  /* 從 75px 縮小至 55px */
-        margin-top: 6px !important;
-        margin-bottom: 6px !important;
-        border-radius: 10px !important;
+        min-height: 45px !important;    /* 高度縮小，減少佔用空間 */
+        height: 45px !important;
+        margin-top: 2px !important;     /* 上間距縮到最小 */
+        margin-bottom: 2px !important;  /* 下間距縮到最小 */
+        padding-top: 0px !important;
+        padding-bottom: 0px !important;
+        border-radius: 8px !important;
     }
     
-    /* 4. 折疊按鈕字體維持原樣 */
+    /* 4. 折疊按鈕字體 */
     .stExpander details summary p {
         font-size: 18px !important;
         font-weight: 500 !important;
@@ -117,7 +120,7 @@ else:
     
     with st.expander("📱 點我展開現場專用 QR Code"):
         # 🎯 網址精準固定鎖定：您的專屬完整真實網域
-        current_url = "https://streamlit.app"
+        current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(current_url)
         qr.make(fit=True)
@@ -159,7 +162,7 @@ else:
                 st.session_state.chosen_song = song
                 st.rerun()
 
-    # 第三層：如果選了歌曲，秀出極大字體、最適合長輩閱讀的精美歌詞
+    # 第三層：如果選了歌曲，秀出歌詞
     if st.session_state.chosen_song and st.session_state.chosen_singer:
         st.markdown("---")
         song_info = df[(df["歌手名稱"] == st.session_state.chosen_singer) & (df["歌曲名稱"] == st.session_state.chosen_song)]
@@ -168,7 +171,6 @@ else:
             lyrics_text = "\n".join(song_info["歌詞"].astype(str).tolist())
             song_cat = "/".join(song_info["分類"].astype(str).tolist())
             
-            # 使用官方標題層級，強制輸出最大、最顯眼的文字
             st.markdown(f"# 🎤 {st.session_state.chosen_singer}")
             st.markdown(f"# 《 {st.session_state.chosen_song} 》")
             if song_cat.strip():
@@ -177,7 +179,6 @@ else:
             st.markdown("---")
             st.success("🎵 完整歌詞如下（請向下捲動閱讀）：")
             
-            # 歌詞內文直接使用大標題語法呈現
             for line in lyrics_text.split('\n'):
                 if line.strip():
                     st.markdown(f"### {line}")
