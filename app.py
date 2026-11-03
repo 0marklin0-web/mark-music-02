@@ -32,9 +32,10 @@ if "管理員" in mode:
     st.title("👨‍💼 管理員後台管理 (終極穩定版)")
     st.markdown("---")
     
-    password = st.text_input("🔑 請輸入管理員登入密碼：", type="password", help="預設測試密碼請輸入：1234")
+    # 🎯 核心修正：更換新密碼，並移除任何包含 1234 的說明提示
+    password = st.text_input("🔑 請輸入管理員登入密碼：", type="password")
     
-    if password == "1234":
+    if password == "Chiho888":
         st.success("🔓 認證成功！您現在可以更新歌單資料。")
         
         st.markdown("### 📋 方式一：複製貼上更新（💯 最穩定，100% 成功）")
@@ -104,7 +105,8 @@ if "管理員" in mode:
         st.dataframe(st.session_state.song_df, use_container_width=True)
         
     elif password != "":
-        st.error("🔒 密碼錯誤！請重新輸入。（提示：測試密碼為 1234）")
+        # 🎯 核心修正：移除密碼錯誤時的 1234 提示
+        st.error("🔒 密碼錯誤！請重新輸入。")
 
 # --- 4. 觀眾模式 📱 ---
 else:
