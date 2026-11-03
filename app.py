@@ -8,26 +8,53 @@ import os
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# 🎯 核心修正：移除寫死的顏色設定，改用 CSS 自動跟隨系統深淺色主題切換顏色
+# 🎯 終極修正：使用暴力覆蓋法 (Universal CSS Override) 確保所有手機裝置上的字體與下拉選單絕對放大
 st.markdown(
     """
     <style>
-    /* 1. 標題文字：不指定顏色，僅放大加粗，讓系統自動根據深淺色底色變黑或變白 */
-    .stSelectbox label p {
-        font-size: 24px !important;
+    /* 1. 觀眾模式大標題放大 */
+    h1 {
+        font-size: 42px !important;
         font-weight: bold !important;
     }
     
-    /* 2. 藍框選單文字：極致放大，方便手機點選 */
-    .stSelectbox div div div p {
-        font-size: 22px !important;
-        font-weight: 500 !important;
+    /* 2. 暴力放大「1. 請選擇歌手名稱：」與「2. 請選擇歌曲名稱：」的所有標題文字 */
+    div[data-testid="stWidgetLabel"] p {
+        font-size: 32px !important;
+        font-weight: 900 !important;
+        line-height: 1.5 !important;
     }
     
-    /* 3. 調整下拉選單列的高度與間距 */
-    .stSelectbox div div div {
-        padding-top: 6px !important;
-        padding-bottom: 6px !important;
+    /* 3. 暴力放大下拉選單「未點開前」框框內的文字（適合老人家點擊） */
+    div[data-baseweb="select"] div p {
+        font-size: 28px !important;
+        font-weight: bold !important;
+    }
+    
+    /* 4. 暴力放大下拉選單「點開後」跳出來的歌手與歌曲選單列表文字 */
+    ul[role="listbox"] li div {
+        font-size: 28px !important;
+        font-weight: bold !important;
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+    }
+    
+    /* 5. 放大「📱 點我展開現場專用 QR Code」按鈕區塊字體 */
+    .stExpander details summary p {
+        font-size: 26px !important;
+        font-weight: bold !important;
+    }
+    
+    /* 6. 加大下拉選單外框與按鈕高度，讓手指更容易觸控點選 */
+    div[data-baseweb="select"] {
+        min-height: 65px !important;
+    }
+    
+    /* 7. 順便將秀出來的「歌詞內文」也做大字體優化，方便長輩邊看邊唱 */
+    div[data-testid="stText"] {
+        font-size: 24px !important;
+        line-height: 2 !important;
+        font-weight: bold !important;
     }
     </style>
     """,
@@ -98,7 +125,6 @@ if "管理員" in mode:
                         st.success("🎉 歌單已永久寫入雲端檔案！現場所有粉絲的手機只要重新整理，就能立刻看到全新歌單！")
                         st.balloons()
                         
-                        # 強制重新整理當前網頁畫面
                         st.rerun()
                     else:
                         st.error(f"❌ 欄位不符！貼上的內容必須包含這四個標題：歌手名稱、歌曲名稱、歌詞、分類。目前缺少：{', '.join(missing_cols)}")
@@ -121,8 +147,8 @@ else:
     st.markdown("---")
     
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
-        # 🎯 網址精準固定，絕對沒有錯
-        current_url = "https://streamlit.app"
+        # 🎯 網址精準固定，絕不再出任何差錯！
+        current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
             
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(current_url)
