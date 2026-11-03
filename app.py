@@ -8,17 +8,17 @@ import io
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
 # 🎯 終極同步核心：將預設資料直接與系統執行緒綁定，確保全站所有手機、電腦同步看到同一份資料
-@st.cache_data(ttl=10)  # 每 10 秒自動同步最新儲存的資料，不耗費手機流量
+@st.cache_data(ttl=10)  # 每 10 秒自動同步最新儲存的資料
 def get_default_data():
     return {
         "歌手名稱": ["周杰倫", "周杰倫", "五月天", "蔡依林", "告五人"],
-        "歌曲名稱": ["晴天", "告白氣球", "突然好想你", "倒帶", "披星戴月的想你"],
+        "歌曲名稱": ["晴天", "告白氣球", "突然好想記", "倒帶", "披星戴月的想你"],
         "分類": ["國語流行", "國語流行", "經典樂團", "國語流行", "獨立樂團"],
         "歌詞": [
             "故事的小黃花 從出生那年就飄著\n童年的蕩秋千 隨記憶一直晃到現在\n吹著前奏望著天空 我想起花瓣試著掉落",
             "親愛的 愛上你 從那天起\n甜蜜的很輕易\n親愛的 別任性 你的眼睛\n在說我願意",
             "突然好想你 你會在哪裡\n過得快樂或委屈\n突然好想你 突然鋒利的回憶\n突然模糊的眼睛",
-            "你總是要我乖 張開雙手帶我到未來\n如果你善解人意 怎麼不明白\n我們的愛太無奈 總是承載著太多期盼",
+            "你總是要我乖 張開雙手帶到未來\n如果你善解人意 怎麼不明白\n我們的愛太無奈 總是承載著太多期盼",
             "我會披星戴月的想你\n我會奮不顧身地前進\n遠方煙火點燃你的心\n照亮我的一線生機"
         ]
     }
@@ -64,7 +64,9 @@ if "管理員" in mode:
                         
                         # 🎯 核心同步升級：直接強制複寫快取記憶體
                         st.session_state.master_df = new_df[required_cols]
-                        st.clear_cache() # 清除舊快取，強迫所有新連進來的手機讀取最新資料
+                        
+                        # 🎯 修正語法：使用正確的快取清除指令
+                        st.cache_data.clear() 
                         
                         st.success("🎉 歌單已成功發佈！現場所有粉絲的手機只要重新整理，就能立刻看到全新歌單！")
                         st.balloons()
@@ -92,7 +94,8 @@ else:
     df = st.session_state.master_df
     
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
-        current_url = "https://streamlit.app"
+        # 🎯 終極鎖定：您的完整正確網域，絕不再漏掉
+        current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
             
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(current_url)
