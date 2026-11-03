@@ -8,49 +8,43 @@ import os
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# 🎯 終極修正：使用暴力覆蓋法 (Universal CSS Override) 確保所有手機裝置上的字體與下拉選單絕對放大
+# 🎯 核心樣式設定：精準控制紅框（放大）與藍框（縮小）的字體比例，自動適應深淺色模式
 st.markdown(
     """
     <style>
-    /* 1. 觀眾模式大標題放大 */
-    h1 {
-        font-size: 42px !important;
-        font-weight: bold !important;
-    }
-    
-    /* 2. 暴力放大「1. 請選擇歌手名稱：」與「2. 請選擇歌曲名稱：」的所有標題文字 */
+    /* 1. 紅框：將「1. 請選擇歌手名稱：」與「2. 請選擇歌曲名稱：」的標題字體顯著放大 */
     div[data-testid="stWidgetLabel"] p {
-        font-size: 32px !important;
-        font-weight: 900 !important;
-        line-height: 1.5 !important;
+        font-size: 30px !important;
+        font-weight: bold !important;
+        line-height: 1.6 !important;
     }
     
-    /* 3. 暴力放大下拉選單「未點開前」框框內的文字（適合老人家點擊） */
+    /* 1. 紅框：將選單框框內顯示的文字（如：周杰倫、--- 請展開選擇歌曲 ---）一併同步放大 */
     div[data-baseweb="select"] div p {
-        font-size: 28px !important;
-        font-weight: bold !important;
-    }
-    
-    /* 4. 暴力放大下拉選單「點開後」跳出來的歌手與歌曲選單列表文字 */
-    ul[role="listbox"] li div {
-        font-size: 28px !important;
-        font-weight: bold !important;
-        padding-top: 12px !important;
-        padding-bottom: 12px !important;
-    }
-    
-    /* 5. 放大「📱 點我展開現場專用 QR Code」按鈕區塊字體 */
-    .stExpander details summary p {
         font-size: 26px !important;
         font-weight: bold !important;
     }
     
-    /* 6. 加大下拉選單外框與按鈕高度，讓手指更容易觸控點選 */
-    div[data-baseweb="select"] {
-        min-height: 65px !important;
+    /* 1. 紅框：將點開下拉選單後彈出來的清單項目文字也放大 */
+    ul[role="listbox"] li div {
+        font-size: 26px !important;
+        font-weight: bold !important;
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
     }
     
-    /* 7. 順便將秀出來的「歌詞內文」也做大字體優化，方便長輩邊看邊唱 */
+    /* 2. 藍框：將「📱 點我展開現場專用 QR Code」折疊按鈕的字體稍微縮小一點點，使其不喧賓奪主 */
+    .stExpander details summary p {
+        font-size: 18px !important;
+        font-weight: 500 !important;
+    }
+    
+    /* 加大選單觸控高度，方便點擊 */
+    div[data-baseweb="select"] {
+        min-height: 60px !important;
+    }
+    
+    /* 歌詞內文大字體優化 */
     div[data-testid="stText"] {
         font-size: 24px !important;
         line-height: 2 !important;
@@ -61,20 +55,20 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 🎯 實體檔案同步核心
+# --- 2. 實體檔案同步核心 ---
 DATA_FILE = "my_songs.csv"
 
 # 初始化：如果雲端還沒有這個檔案，先建立一份預設資料檔案
 if not os.path.exists(DATA_FILE):
     default_data = {
         "歌手名稱": ["周杰倫", "周杰倫", "五月天", "蔡依林", "告五人"],
-        "歌曲名稱": ["晴天", "告白氣球", "突然好想你", "倒帶", "披星戴月的想你"],
+        "歌曲名稱": ["晴天", "告白氣球", "突然好想記", "倒帶", "披星戴月的想你"],
         "分類": ["國語流行", "國語流行", "經典樂團", "國語流行", "獨立樂團"],
         "歌詞": [
             "故事的小黃花 從出生那年就飄著\n童年的蕩秋千 隨記憶一直晃到現在\n吹著前奏望著天空 我想起花瓣試著掉落",
             "親愛的 愛上你 從那天起\n甜蜜的很輕易\n親愛的 別任性 你的眼睛\n在說我願意",
-            "突然好想你 你會在哪裡\n過得快樂或委屈\n突然好想你 突然鋒利的回憶\n突然模糊的眼睛",
-            "你總是要我乖 張開雙手帶我到未來\n如果你善解人意 怎麼不明白\n我們的愛太無奈 總是承載著太多期盼",
+            "突然好想死 你會在哪裡\n過得快樂或委屈\n突然好想你 突然鋒利的回憶\n突然模糊的眼睛",
+            "你總是要我乖 張開雙手帶到未來\n如果你善解人意 怎麼不明白\n我們的愛太無奈 總是承載著太多期盼",
             "我會披星戴月的想你\n我會奮不顧身地前進\n遠方煙火點燃你的心\n照亮我的一線生機"
         ]
     }
@@ -83,11 +77,11 @@ if not os.path.exists(DATA_FILE):
 # 讀取實體檔案
 df = pd.read_csv(DATA_FILE, encoding='utf-8').fillna("").astype(str)
 
-# --- 2. 側邊欄：模式切換 ---
+# --- 3. 側邊欄：模式切換 ---
 st.sidebar.title("⚙️ 模式切換面板")
 mode = st.sidebar.radio("請選擇當前模式：", ["觀眾模式 📱 (粉絲看歌詞)", "管理員模式 🔑 (後台上傳)"])
 
-# --- 3. 管理員模式 🔑 ---
+# --- 4. 管理員模式 🔑 ---
 if "管理員" in mode:
     st.title("👨‍💼 管理員後台管理 (實體檔案全站同步版)")
     st.markdown("---")
@@ -121,10 +115,8 @@ if "管理員" in mode:
                         
                         # 直接把新資料複寫覆蓋掉雲端硬碟的 CSV 檔案
                         new_df[required_cols].to_csv(DATA_FILE, index=False, encoding='utf-8')
-                        
                         st.success("🎉 歌單已永久寫入雲端檔案！現場所有粉絲的手機只要重新整理，就能立刻看到全新歌單！")
                         st.balloons()
-                        
                         st.rerun()
                     else:
                         st.error(f"❌ 欄位不符！貼上的內容必須包含這四個標題：歌手名稱、歌曲名稱、歌詞、分類。目前缺少：{', '.join(missing_cols)}")
@@ -140,14 +132,14 @@ if "管理員" in mode:
     elif password != "":
         st.error("🔒 密碼錯誤！請重新輸入。")
 
-# --- 4. 觀眾模式 📱 ---
+# --- 5. 觀眾模式 📱 ---
 else:
     st.title("🎸 現場 Live 點歌與動態歌詞本")
     st.caption("✨ 歡迎現場的朋友！用手機點選你想看的歌曲與歌詞吧！")
     st.markdown("---")
     
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
-        # 🎯 網址精準固定，絕不再出任何差錯！
+        # 🎯 網址精準固定鎖定：這一次絕對鎖定您的完整真實網域！
         current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
             
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
