@@ -64,7 +64,7 @@ if "管理員" in mode:
                         for col in required_cols:
                             new_df[col] = new_df[col].fillna("").astype(str).str.strip()
                         
-                        # 🎯 核心同步：同時修改 session_state 與永久覆蓋全站預設值
+                        # 同步修改變數與覆蓋全站預設值
                         st.session_state.master_df = new_df[required_cols]
                         st.session_state.shared_df = new_df[required_cols]
                         st.success("🎉 歌單已成功發佈至雲端！現在所有現場粉絲的手機畫面皆已同步更新。")
@@ -93,7 +93,8 @@ else:
     df = st.session_state.master_df
     
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
-        current_url = "https://streamlit.app"
+        # 🎯 終極鎖定：精準填入您的完整正確網域，絕不再漏掉
+        current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
             
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(current_url)
