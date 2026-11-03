@@ -98,21 +98,16 @@ else:
         if selected_song != "--- 請展開選擇歌曲 ---":
             song_info = songs_of_singer[songs_of_singer["歌曲名稱"] == selected_song]
             
-            # 🎯 終極修正：改用 .values[0] 確保只提取純文字，徹底根除 TypeError
+            # 🎯 採用最安全的序列提值，確保抓出來是純字串，且不使用內嵌 HTML
             lyrics_text = str(song_info["歌詞"].values[0])
             song_cat = str(song_info["分類"].values[0])
             
             st.markdown("---")
-            st.markdown(f"### 🎤 {selected_singer}  • 《 {selected_song} 》")
+            st.markdown(f"## 🎤 {selected_singer}  • 《 {selected_song} 》")
             if song_cat.strip():
                 st.caption(f"📁 歌曲分類：{song_cat}")
             
-            st.markdown(
-                f"""
-                <div style="background-color: #f0f2f6; padding: 20px; border-radius: 10px; border-left: 5px solid #ff4b4b; margin-top: 10px;">
-                    <p style="font-size: 18px; line-height: 2; white-space: pre-wrap; font-weight: bold; color: #1f2d3d; margin: 0;">{lyrics_text}</p>
-                </div>
-                """, 
-                unsafe_style_allowed=True
-            )
+            # 🎯 改用官方原生大字體安全元件呈現歌詞，絕不崩潰且支援自動換行
+            st.info("🎵 完整歌詞內容：")
+            st.text(lyrics_text)
             st.markdown("---")
