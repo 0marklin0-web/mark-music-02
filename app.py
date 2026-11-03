@@ -8,15 +8,14 @@ st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="center
 
 # 初始化 Session State (確保歌單資料在切換模式時不會消失)
 if "song_df" not in st.session_state:
-    # 預設建立幾筆範例資料，方便你現在直接測試觀眾模式
     default_data = {
         "歌手名稱": ["周杰倫", "周杰倫", "五月天", "蔡依林", "告五人"],
-        "歌曲名稱": ["晴天", "告白氣球", "突然好想逆", "倒帶", "披星戴月的想你"],
+        "歌曲名稱": ["晴天", "告白氣球", "突然好想你", "倒帶", "披星戴月的想你"],
         "分類": ["國語流行", "國語流行", "經典樂團", "國語流行", "獨立樂團"],
         "歌詞": [
             "故事的小黃花 從出生那年就飄著\n童年的蕩秋千 隨記憶一直晃到現在\n吹著前奏望著天空 我想起花瓣試著掉落",
             "親愛的 愛上你 從那天起\n甜蜜的很輕易\n親愛的 別任性 你的眼睛\n在說我願意",
-            "突然好想你 你會在哪裡\n過得快樂或委屈\n突然好想你 突然鋒利的回憶\n突然模糊的眼睛",
+            "突然好想你 你會在哪裡\n過得快樂或委屈\n突然好想你 突然鋒利的回記\n突然模糊的眼睛",
             "你總是要我乖 張開雙手帶我到未來\n如果你善解人意 怎麼不明白\n我們的愛太無奈 總是承載著太多期盼",
             "我會披星戴月的想你\n我會奮不顧身地前進\n遠方煙火點燃你的心\n照亮我的一線生機"
         ]
@@ -32,32 +31,40 @@ if "管理員" in mode:
     st.title("👨‍💼 管理員後台管理")
     st.markdown("---")
     
-    # 安全密碼驗證
     password = st.text_input("🔑 請輸入管理員登入密碼：", type="password", help="預設測試密碼請輸入：1234")
     
     if password == "1234":
         st.success("🔓 認證成功！您現在可以更新歌單資料。")
         
-        # 檔案上傳器
         uploaded_file = st.file_uploader("📥 請上傳您的 Excel 歌單檔案 (.xlsx)", type=["xlsx"])
         
         if uploaded_file is not None:
             try:
-                # 讀取 Excel
+                # 讀取 Excel 並自動刪除全空的行列
                 new_df = pd.read_excel(uploaded_file)
+                new_df.dropna(how='all', inplace=True)
+                
+                # 去除欄位名稱前後可能不小心打到的空格
+                new_df.columns = [str(col).strip() for col in new_df.columns]
                 
                 # 檢查欄位
                 required_cols = ["歌手名稱", "歌曲名稱", "歌詞", "分類"]
-                if all(col in new_df.columns for col in required_cols):
-                    st.session_state.song_df = new_df
+                missing_cols = [col for col in required_cols if col not in new_df.columns]
+                
+                if not missing_cols:
+                    # 確保每一欄都是文字格式，避免數字或空值造成程式當機
+                    for col in required_cols:
+                        new_df[col] = new_df[col].fillna("").astype(str)
+                    
+                    st.session_state.song_df = new_df[required_cols]
                     st.success("🎉 歌單全數更新成功！切換回觀眾模式即可看到新歌單。")
                     st.balloons()
                 else:
-                    st.error(f"❌ 錯誤：Excel 欄位名稱不符！必須完全包含這四個欄位：{', '.join(required_cols)}")
+                    st.error(f"❌ 錯誤：Excel 欄位名稱不符！您的 Excel 檔案缺少了：{', '.join(missing_cols)}")
+                    st.info("💡 您的 Excel 最上方第一列（標頭）必須精準包含這四個字：歌手名稱、歌曲名稱、歌詞、分類")
             except Exception as e:
                 st.error(f"❌ 讀取檔案時發生錯誤: {e}")
                 
-        # 顯示當前系統內的資料表
         st.write("📊 **目前系統內的歌單總覽 (共 {} 首)：**".format(len(st.session_state.song_df)))
         st.dataframe(st.session_state.song_df, use_container_width=True)
         
@@ -72,9 +79,8 @@ else:
     
     df = st.session_state.song_df
     
-    # QR Code 區塊
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
-        demo_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
+        demo_url = "https://streamlit.app"
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(demo_url)
         qr.make(fit=True)
@@ -84,7 +90,7 @@ else:
         img.save(buf)
         st.image(buf.getvalue(), caption="現場觀眾掃描此碼即可進入此點歌本", width=180)
 
-    # 第一層：直接選擇歌手 (已移除分類篩選)
+    # 第一層：選擇歌手
     singers = sorted(list(df["歌手名稱"].unique()))
     selected_singer = st.selectbox("🎤 1. 請選擇歌手名稱：", ["--- 請展開選擇歌手 ---"] + singers)
     
@@ -96,20 +102,21 @@ else:
         # 第三層：秀出歌詞
         if selected_song != "--- 請展開選擇歌曲 ---":
             song_info = songs_of_singer[songs_of_singer["歌曲名稱"] == selected_song]
-            lyrics_text = song_info["歌詞"].values[0]
-            song_cat = song_info["分類"].values[0]
+            
+            # 使用 .iloc[0] 確保只精準抓取單一字串，徹底解決 TypeError 問題
+            lyrics_text = str(song_info["歌詞"].iloc[0])
+            song_cat = str(song_info["分類"].iloc[0])
             
             st.markdown("---")
             st.markdown(f"### 🎤 {selected_singer}  • 《 {selected_song} 》")
-            st.caption(f"📁 歌曲分類：{song_cat}")
+            if song_cat.strip():
+                st.caption(f"📁 歌曲分類：{song_cat}")
             
-            # 使用內嵌樣式讓歌詞在手機上大字、置中、好閱讀
+            # 顯示歌詞區塊
             st.markdown(
                 f"""
                 <div style="background-color: #f0f2f6; padding: 20px; border-radius: 10px; border-left: 5px solid #ff4b4b; margin-top: 10px;">
-                    <p style="font-size: 18px; line-height: 2; white-space: pre-wrap; font-weight: bold; color: #1f2d3d;">
-{lyrics_text}
-                    </p>
+                    <p style="font-size: 18px; line-height: 2; white-space: pre-wrap; font-weight: bold; color: #1f2d3d; margin: 0;">{lyrics_text}</p>
                 </div>
                 """, 
                 unsafe_style_allowed=True
