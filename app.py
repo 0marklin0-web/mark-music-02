@@ -8,40 +8,39 @@ import os
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# 🎯 核心樣式修正：將大按鈕的上下高度與外距（間距）極致縮小，讓排版更緊湊
+# 🎯 核心樣式：強制讓拉霸選單（Selectbox）的文字與提示在手機上絕對放大且適應深淺色模式
 st.markdown(
     """
     <style>
-    /* 1. 將選單的導引大標題微調 */
-    h2 {
+    /* 強力放大拉霸選單上方的標題文字 */
+    div[data-testid="stWidgetLabel"] p {
+        font-size: 26px !important;
+        font-weight: bold !important;
+        line-height: 1.6 !important;
+    }
+    
+    /* 強力放大拉霸框框內顯示的選中字體 */
+    div[data-baseweb="select"] div p {
         font-size: 24px !important;
         font-weight: bold !important;
-        color: inherit !important;
-        margin-top: 10px !important;
-        margin-bottom: 8px !important;
     }
     
-    /* 2. 大按鈕內部的字體大小維持舒適度 */
-    div.stButton > button p {
-        font-size: 20px !important;
+    /* 強力放大拉霸點開後的下拉清單字體 */
+    ul[role="listbox"] li div {
+        font-size: 24px !important;
         font-weight: bold !important;
     }
     
-    /* 3. 🎯 核心修正：將按鈕的高度與間距縮小，讓排版更緊湊、更好塞 */
-    div.stButton > button {
-        min-height: 45px !important;    /* 高度縮小，減少佔用空間 */
-        height: 45px !important;
-        margin-top: 2px !important;     /* 上間距縮到最小 */
-        margin-bottom: 2px !important;  /* 下間距縮到最小 */
-        padding-top: 0px !important;
-        padding-bottom: 0px !important;
-        border-radius: 8px !important;
+    /* 微調拉霸選單的高度，方便手指點選 */
+    div[data-baseweb="select"] > div {
+        min-height: 60px !important;
     }
     
-    /* 4. 折疊按鈕字體 */
-    .stExpander details summary p {
-        font-size: 18px !important;
-        font-weight: 500 !important;
+    /* 歌詞內文大字體優化 */
+    div[data-testid="stText"] {
+        font-size: 24px !important;
+        line-height: 2 !important;
+        font-weight: bold !important;
     }
     </style>
     """,
@@ -115,7 +114,7 @@ if "管理員" in mode:
 # --- 5. 觀眾模式 📱 ---
 else:
     st.title("🎸 現場 Live 點歌與動態歌詞本")
-    st.caption("✨ 歡迎現場的朋友！點選下方大按鈕看歌詞！")
+    st.caption("✨ 歡迎現場的朋友！請使用下方拉霸選單看歌詞！")
     st.markdown("---")
     
     with st.expander("📱 點我展開現場專用 QR Code"):
@@ -129,59 +128,27 @@ else:
         img.save(buf)
         st.image(buf.getvalue(), caption="現場觀眾掃描此碼即可進入此點歌本", width=180)
 
-    # 利用 Session State 記錄點選狀態
-    if "chosen_singer" not in st.session_state:
-        st.session_state.chosen_singer = None
-    if "chosen_song" not in st.session_state:
-        st.session_state.chosen_song = None
-
-    # 第一層：用大標題引導選擇歌手
-    st.markdown("## 🎤 1. 請點選歌手選單：")
-    
-    # 獲取歌手清單
+    # 🎤 第一層拉霸：選擇歌手
     singers = sorted(list(df["歌手名稱"].unique()))
+    selected_singer = st.selectbox("🎤 1. 請選擇歌手名稱：", ["--- 請展開選擇歌手 ---"] + singers)
     
-    # 用排版將按鈕變大，一個歌手一條大按鈕
-    for singer in singers:
-        label_text = f"👉 【 {singer} 】 👈" if st.session_state.chosen_singer == singer else f"👤 {singer}"
-        if st.button(label_text, key=f"btn_singer_{singer}", use_container_width=True):
-            st.session_state.chosen_singer = singer
-            st.session_state.chosen_song = None  # 切換歌手時重設歌曲
-            st.rerun()
-
-    # 第二層：如果選了歌手，秀出該歌手的所有歌曲大按鈕
-    if st.session_state.chosen_singer:
-        st.markdown("---")
-        st.markdown(f"## 🎶 2. 歌手【{st.session_state.chosen_singer}】的歌曲清單：")
+    # 🎶 第二層拉霸：選擇歌曲
+    if selected_singer != "--- 請展開選擇歌手 ---":
+        songs_of_singer = df[df["歌手名稱"] == selected_singer]
+        selected_song = st.selectbox("🎶 2. 請選擇歌曲名稱：", ["--- 請展開選擇歌曲 ---"] + list(songs_of_singer["歌曲名稱"]))
         
-        songs_of_singer = df[df["歌手名稱"] == st.session_state.chosen_singer]
-        
-        for song in list(songs_of_singer["歌曲名稱"]):
-            label_song = f"🔥 正在播放：《 {song} 》" if st.session_state.chosen_song == song else f"🎵 《 {song} 》"
-            if st.button(label_song, key=f"btn_song_{song}", use_container_width=True):
-                st.session_state.chosen_song = song
-                st.rerun()
-
-    # 第三層：如果選了歌曲，秀出歌詞
-    if st.session_state.chosen_song and st.session_state.chosen_singer:
-        st.markdown("---")
-        song_info = df[(df["歌手名稱"] == st.session_state.chosen_singer) & (df["歌曲名稱"] == st.session_state.chosen_song)]
-        
-        if not song_info.empty:
+        # 📄 第三層：顯示完整歌詞
+        if selected_song != "--- 請展開選擇歌曲 ---":
+            song_info = songs_of_singer[songs_of_singer["歌曲名稱"] == selected_song]
+            
             lyrics_text = "\n".join(song_info["歌詞"].astype(str).tolist())
             song_cat = "/".join(song_info["分類"].astype(str).tolist())
             
-            st.markdown(f"# 🎤 {st.session_state.chosen_singer}")
-            st.markdown(f"# 《 {st.session_state.chosen_song} 》")
+            st.markdown("---")
+            st.markdown(f"## 🎤 {selected_singer}  • 《 {selected_song} 》")
             if song_cat.strip():
                 st.caption(f"📁 歌曲分類：{song_cat}")
             
-            st.markdown("---")
-            st.success("🎵 完整歌詞如下（請向下捲動閱讀）：")
-            
-            for line in lyrics_text.split('\n'):
-                if line.strip():
-                    st.markdown(f"### {line}")
-                else:
-                    st.write("") # 空行
+            st.info("🎵 完整歌詞內容：")
+            st.text(lyrics_text)
             st.markdown("---")
