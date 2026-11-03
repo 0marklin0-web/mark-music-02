@@ -11,7 +11,7 @@ if "song_df" not in st.session_state:
     # 預設建立幾筆範例資料，方便你現在直接測試觀眾模式
     default_data = {
         "歌手名稱": ["周杰倫", "周杰倫", "五月天", "蔡依林", "告五人"],
-        "歌曲名稱": ["晴天", "告白氣球", "突然好想你", "倒帶", "披星戴月的想你"],
+        "歌曲名稱": ["晴天", "告白氣球", "突然好想逆", "倒帶", "披星戴月的想你"],
         "分類": ["國語流行", "國語流行", "經典樂團", "國語流行", "獨立樂團"],
         "歌詞": [
             "故事的小黃花 從出生那年就飄著\n童年的蕩秋千 隨記憶一直晃到現在\n吹著前奏望著天空 我想起花瓣試著掉落",
@@ -28,7 +28,7 @@ st.sidebar.title("⚙️ 模式切換面板")
 mode = st.sidebar.radio("請選擇當前模式：", ["觀眾模式 📱 (粉絲看歌詞)", "管理員模式 🔑 (後台上傳)"])
 
 # --- 3. 管理員模式 🔑 ---
-if mode == "管理員模式 🔑 (後台上傳)":
+if "管理員" in mode:
     st.title("👨‍💼 管理員後台管理")
     st.markdown("---")
     
@@ -74,7 +74,6 @@ else:
     
     # QR Code 區塊
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
-        # 這裡會自動產生一個範例網址的 QR code
         demo_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(demo_url)
@@ -85,23 +84,14 @@ else:
         img.save(buf)
         st.image(buf.getvalue(), caption="現場觀眾掃描此碼即可進入此點歌本", width=180)
 
-    # 第一層：選擇分類 (輔助篩選)
-    categories = ["全部歌曲"] + list(df["分類"].unique())
-    selected_cat = st.selectbox("🎵 1. 先選擇歌曲分類：", categories)
-    
-    if selected_cat != "全部歌曲":
-        filtered_df = df[df["分類"] == selected_cat]
-    else:
-        filtered_df = df
-        
-    # 第一層：選擇歌手
-    singers = sorted(list(filtered_df["歌手名稱"].unique()))
-    selected_singer = st.selectbox("🎤 2. 請選擇歌手名稱：", ["--- 請展開選擇歌手 ---"] + singers)
+    # 第一層：直接選擇歌手 (已移除分類篩選)
+    singers = sorted(list(df["歌手名稱"].unique()))
+    selected_singer = st.selectbox("🎤 1. 請選擇歌手名稱：", ["--- 請展開選擇歌手 ---"] + singers)
     
     # 第二層：選擇歌曲
     if selected_singer != "--- 請展開選擇歌手 ---":
-        songs_of_singer = filtered_df[filtered_df["歌手名稱"] == selected_singer]
-        selected_song = st.selectbox("🎶 3. 請選擇歌曲名稱：", ["--- 請展開選擇歌曲 ---"] + list(songs_of_singer["歌曲名稱"]))
+        songs_of_singer = df[df["歌手名稱"] == selected_singer]
+        selected_song = st.selectbox("🎶 2. 請選擇歌曲名稱：", ["--- 請展開選擇歌曲 ---"] + list(songs_of_singer["歌曲名稱"]))
         
         # 第三層：秀出歌詞
         if selected_song != "--- 請展開選擇歌曲 ---":
