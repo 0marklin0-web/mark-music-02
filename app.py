@@ -8,31 +8,31 @@ import os
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# 🎯 核心樣式修正：強力將原生的選單大標題與大按鈕文字再度放大，完美適應各種手機螢幕
+# 🎯 核心樣式修正：將引導大標題與大按鈕文字微調縮小至舒適適中的大小
 st.markdown(
     """
     <style>
-    /* 1. 暴力放大選單的導引大標題（1. 請點選歌手選單...） */
+    /* 1. 將選單的導引大標題（1. 請點選歌手選單...）微調縮小 */
     h2 {
-        font-size: 36px !important;
-        font-weight: 900 !important;
+        font-size: 26px !important;  /* 從 36px 縮小至 26px */
+        font-weight: bold !important;
         color: inherit !important;
-        margin-top: 20px !important;
-        margin-bottom: 20px !important;
+        margin-top: 15px !important;
+        margin-bottom: 15px !important;
     }
     
-    /* 2. 暴力放大全站大按鈕（st.button）內部的歌手與歌曲文字 */
+    /* 2. 將大按鈕（st.button）內部的歌手與歌曲選單字體微調縮小 */
     div.stButton > button p {
-        font-size: 32px !important;
+        font-size: 22px !important;  /* 從 32px 縮小至 22px */
         font-weight: bold !important;
     }
     
-    /* 3. 加高大按鈕的上下寬度，讓手指更大更好按，不容易按錯 */
+    /* 3. 調整大按鈕的上下高度，使其外觀更精緻舒適 */
     div.stButton > button {
-        min-height: 75px !important;
-        margin-top: 8px !important;
-        margin-bottom: 8px !important;
-        border-radius: 12px !important;
+        min-height: 55px !important;  /* 從 75px 縮小至 55px */
+        margin-top: 6px !important;
+        margin-bottom: 6px !important;
+        border-radius: 10px !important;
     }
     
     /* 4. 折疊按鈕字體維持原樣 */
@@ -52,13 +52,13 @@ DATA_FILE = "my_songs.csv"
 if not os.path.exists(DATA_FILE):
     default_data = {
         "歌手名稱": ["周杰倫", "周杰倫", "五月天", "蔡依林", "告五人"],
-        "歌曲名稱": ["晴天", "告白氣球", "突然好想你", "倒帶", "披星戴月的想你"],
+        "歌曲名稱": ["晴天", "告白氣球", "突然好想記", "倒帶", "披星戴月的想你"],
         "分類": ["國語流行", "國語流行", "經典樂團", "國語流行", "獨立樂團"],
         "歌詞": [
             "故事的小黃花 從出生那年就飄著\n童年的蕩秋千 隨記憶一直晃到現在\n吹著前奏望著天空 我想起花瓣試著掉落",
             "親愛的 愛上你 從那天起\n甜蜜的很輕易\n親愛的 別任性 你的眼睛\n在說我願意",
             "突然好想你 你會在哪裡\n過得快樂或委屈\n突然好想你 突然鋒利的回憶\n突然模糊的眼睛",
-            "你總是要我乖 張開雙手帶我到未來\n如果你善解人意 怎麼不明白\n我們的愛太無奈 總是承載著太多期盼",
+            "你總是要我乖 張開雙手帶到未來\n如果你善解人意 怎麼不明白\n我們的愛太無奈 總是承載著太多期盼",
             "我會披星戴月的想你\n我會奮不顧身地前進\n遠方煙火點燃你的心\n照亮我的一線生機"
         ]
     }
@@ -116,8 +116,8 @@ else:
     st.markdown("---")
     
     with st.expander("📱 點我展開現場專用 QR Code"):
-        # 🎯 網址精準固定鎖定：這一次絕對鎖定您的完整真實網域！
-        current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
+        # 🎯 網址精準固定鎖定：您的專屬完整真實網域
+        current_url = "https://streamlit.app"
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(current_url)
         qr.make(fit=True)
@@ -177,7 +177,7 @@ else:
             st.markdown("---")
             st.success("🎵 完整歌詞如下（請向下捲動閱讀）：")
             
-            # 歌詞內文直接使用大標題語法呈現，保證長輩不需要放大鏡
+            # 歌詞內文直接使用大標題語法呈現
             for line in lyrics_text.split('\n'):
                 if line.strip():
                     st.markdown(f"### {line}")
