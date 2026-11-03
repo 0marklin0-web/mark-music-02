@@ -8,45 +8,45 @@ import os
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# 🎯 核心修正：將紅框部分的字體尺寸（WidgetLabel、Select Value）再度往上放大，其餘藍框與內文保持不動
+# 🎯 強力修正：使用全域與屬性選擇器進行強力覆蓋，不論新舊版 Streamlit 結構，紅框字體全部強制極大化！
 st.markdown(
     """
     <style>
-    /* 1. 紅框：將「1. 請選擇歌手名稱：」與「2. 請選擇歌曲名稱：」的標題字體再度放大 */
-    div[data-testid="stWidgetLabel"] p {
-        font-size: 36px !important;  /* 從 30px 再度放大到 36px */
+    /* 1. 紅框：強力放大「1. 請選擇歌手名稱：」與「2. 請選擇歌曲名稱：」的標題字體 */
+    div[data-testid="stWidgetLabel"] * {
+        font-size: 34px !important;
         font-weight: bold !important;
         line-height: 1.6 !important;
     }
     
-    /* 1. 紅框：將選單框框內顯示的選中文字（如：周杰倫、--- 請展開選擇歌曲 ---）同步再度放大 */
-    div[data-baseweb="select"] div p {
-        font-size: 32px !important;  /* 從 26px 再度放大到 32px */
+    #tabs-b Bukhara-tab-0 * { font-size: 34px !important; }
+    
+    /* 1. 紅框：強力放大選單框框內顯示的選中文字與提示文字（如：周杰倫、--- 請展開選擇歌曲 ---） */
+    div[data-baseweb="select"] * {
+        font-size: 30px !important;
         font-weight: bold !important;
     }
     
-    /* 1. 紅框：將點開下拉選單後彈出來的清單項目文字同步放大 */
-    ul[role="listbox"] li div {
-        font-size: 32px !important;  /* 同步放大到 32px */
+    /* 1. 紅框：強力放大點開下拉選單後彈出來的清單項目文字 */
+    ul[role="listbox"] * {
+        font-size: 30px !important;
         font-weight: bold !important;
-        padding-top: 12px !important;
-        padding-bottom: 12px !important;
     }
     
-    /* 2. 藍框保持原樣：維持在 18px */
-    .stExpander details summary p {
+    /* 2. 藍框保持精緻大小：維持在 18px */
+    .stExpander details summary p, .stExpander details summary * {
         font-size: 18px !important;
         font-weight: 500 !important;
     }
     
     /* 加大選單觸控高度，方便大字體呈現與手指點擊 */
-    div[data-baseweb="select"] {
-        min-height: 70px !important;
+    div[data-baseweb="select"] > div {
+        min-height: 75px !important;
     }
     
-    /* 歌詞內文大字體保持原樣 */
+    /* 歌詞內文大字體優化 */
     div[data-testid="stText"] {
-        font-size: 24px !important;
+        font-size: 26px !important;
         line-height: 2 !important;
         font-weight: bold !important;
     }
@@ -140,7 +140,7 @@ else:
     
     with st.expander("📱 點我展開現場專用 QR Code (可供台下粉絲掃描)"):
         # 🎯 網址精準固定鎖定：您的專屬完整真實網域
-        current_url = "https://streamlit.app"
+        current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
             
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(current_url)
