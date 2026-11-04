@@ -249,8 +249,8 @@ else:
         st.markdown('<div id="section_songs"></div>', unsafe_allow_html=True)
         st.markdown("---")
         
-        # 在第二層上方加入返回按鈕（返回第一層選擇處）
-        if st.button("⬅️ 返回上一頁（選擇歌手/分類）", key="back_to_top_btn", use_container_width=True):
+        # ⬅️ 返回上一頁按鈕（使用 type="primary" 呈現主題色彩區別）
+        if st.button("⬅️ 返回上一頁（選擇歌手/分類）", key="back_to_top_btn", use_container_width=True, type="primary"):
             st.session_state.chosen_filter_val = None
             st.session_state.chosen_song = None
             st.session_state.scroll_target = "section_top"
@@ -283,8 +283,8 @@ else:
         st.markdown('<div id="section_lyrics"></div>', unsafe_allow_html=True)
         st.markdown("---")
         
-        # 在第三層上方加入返回按鈕（返回第二層歌曲清單處）
-        if st.button("⬅️ 返回上一頁（歌曲清單）", key="back_to_songs_btn", use_container_width=True):
+        # ⬅️ 返回上一頁按鈕（使用 type="primary" 呈現主題色彩區別）
+        if st.button("⬅️ 返回上一頁（歌曲清單）", key="back_to_songs_btn", use_container_width=True, type="primary"):
             st.session_state.chosen_song = None
             st.session_state.scroll_target = "section_songs"
             st.rerun()
