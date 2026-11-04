@@ -5,11 +5,21 @@ from io import BytesIO
 import io
 import os
 import streamlit.components.v1 as components
+import locale
+
+# 設定筆劃排序用的 locale (嘗試繁體中文筆劃排序，若環境不支援則預設使用標準排序)
+try:
+    locale.setlocale(locale.LC_COLLATE, 'zh_TW.UTF-8')
+except:
+    try:
+        locale.setlocale(locale.LC_COLLATE, 'Traditional_Taiwan')
+    except:
+        pass
 
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# 🎯 核心樣式修正：將大按鈕、radio選項字體放大，並將外距極致縮小讓排版更緊湊，同時隱藏右上角的 GitHub 原始碼連結
+# 🎯 核心樣式修正：將大按鈕、radio選項字體放大，並將外距與高度極致縮小讓排版更緊湊，同時隱藏右上角的 GitHub 原始碼連結
 st.markdown(
     """
     <style>
@@ -39,15 +49,15 @@ st.markdown(
         font-weight: bold !important;
     }
     
-    /* 5. 🎯 核心修正：將按鈕的高度與間距縮小，讓排版更緊湊、更好塞 */
+    /* 5. 🎯 核心修正：將按鈕的高度與上下外距極致縮小，讓排版更緊湊、更窄 */
     div.stButton > button {
-        min-height: 45px !important;    /* 高度縮小，減少佔用空間 */
-        height: 45px !important;
-        margin-top: 2px !important;     /* 上間距縮到最小 */
-        margin-bottom: 2px !important;  /* 下間距縮到最小 */
+        min-height: 36px !important;    /* 高度縮小 */
+        height: 36px !important;
+        margin-top: 1px !important;     /* 上間距極致縮小 */
+        margin-bottom: 1px !important;  /* 下間距極致縮小 */
         padding-top: 0px !important;
         padding-bottom: 0px !important;
-        border-radius: 8px !important;
+        border-radius: 6px !important;
     }
     
     /* 6. 折疊按鈕字體 */
@@ -209,14 +219,16 @@ else:
         st.session_state.chosen_song = None
 
     if current_mode == "singer":
-        singers = sorted([s for s in df["歌手名稱"].unique() if s.strip()])
+        raw_singers = [s for s in df["歌手名稱"].unique() if s.strip()]
+        # 🎯 依筆劃排序
+        singers = sorted(raw_singers, key=lambda x: locale.strxfrm(x))
+        
         # 2 欄並列排版
         for i in range(0, len(singers), 2):
             cols = st.columns(2)
             for j in range(2):
                 if i + j < len(singers):
                     singer = singers[i + j]
-                    # 為每一個歌手按鈕埋入對應的 HTML 錨點
                     st.markdown(f'<div id="anchor_singer_{singer}"></div>', unsafe_allow_html=True)
                     with cols[j]:
                         is_active = (st.session_state.filter_type == "singer") and (st.session_state.chosen_filter_val == singer)
@@ -229,14 +241,16 @@ else:
                             st.rerun()
 
     else:
-        categories = sorted([c for c in df["分類"].unique() if c.strip()])
+        raw_categories = [c for c in df["分類"].unique() if c.strip()]
+        # 🎯 依筆劃排序
+        categories = sorted(raw_categories, key=lambda x: locale.strxfrm(x))
+        
         # 2 欄並列排版
         for i in range(0, len(categories), 2):
             cols = st.columns(2)
             for j in range(2):
                 if i + j < len(categories):
                     cat = categories[i + j]
-                    # 為每一個分類按鈕埋入對應的 HTML 錨點
                     st.markdown(f'<div id="anchor_cat_{cat}"></div>', unsafe_allow_html=True)
                     with cols[j]:
                         is_active = (st.session_state.filter_type == "category") and (st.session_state.chosen_filter_val == cat)
@@ -261,7 +275,6 @@ else:
             st.session_state.chosen_filter_val = None
             st.session_state.chosen_song = None
             
-            # 動態指向原先點選的那一顆按鈕錨點
             st.session_state.scroll_target = f"anchor_singer_{target_val}" if is_singer_mode else f"anchor_cat_{target_val}"
             st.rerun()
 
@@ -273,68 +286,14 @@ else:
         else:
             filtered_df = df[df["分類"] == st.session_state.chosen_filter_val]
         
-        for idx, row in filtered_df.iterrows():
+        # 🎯 歌曲清單依筆劃排序
+        sorted_indices = sorted(filtered_df.index, key=lambda idx: locale.strxfrm(str(filtered_df.loc[idx, "歌曲名稱"])))
+        
+        for idx in sorted_indices:
+            row = df.loc[idx]
             song = row["歌曲名稱"]
             singer_name = row["歌手名稱"]
             is_selected = st.session_state.chosen_song == song
             
             display_title = f"《 {song} 》 - {singer_name}" if st.session_state.filter_type == "category" else f"《 {song} 》"
-            label_song = f"🔥 正在播放：{display_title}" if is_selected else f"🎵 {display_title}"
-            
-            if st.button(label_song, key=f"btn_song_{idx}_{song}", use_container_width=True):
-                st.session_state.chosen_song = song
-                st.session_state.chosen_singer_for_song = singer_name
-                st.session_state.scroll_target = "section_lyrics"
-                st.rerun()
-
-    # 第三層：如果選了歌曲，設定錨點並顯示歌詞
-    if st.session_state.chosen_song:
-        st.markdown('<div id="section_lyrics"></div>', unsafe_allow_html=True)
-        st.markdown("---")
-        
-        # ⬅️ 返回上一頁按鈕（歌曲清單）
-        if st.button("⬅️ 返回上一頁（歌曲清單）", key="back_to_songs_btn", use_container_width=True, type="primary"):
-            st.session_state.chosen_song = None
-            st.session_state.scroll_target = "section_songs"
-            st.rerun()
-        
-        target_singer = getattr(st.session_state, "chosen_singer_for_song", st.session_state.chosen_filter_val)
-        song_info = df[(df["歌曲名稱"] == st.session_state.chosen_song) & (df["歌手名稱"] == target_singer)]
-        
-        if song_info.empty:
-            song_info = df[df["歌曲名稱"] == st.session_state.chosen_song]
-
-        if not song_info.empty:
-            actual_singer = song_info.iloc[0]["歌手名稱"]
-            lyrics_text = song_info.iloc[0]["歌詞"]
-            song_cat = song_info.iloc[0]["分類"]
-            
-            st.markdown(f"# 🎤 {actual_singer}")
-            st.markdown(f"# 《 {st.session_state.chosen_song} 》")
-            if song_cat.strip():
-                st.caption(f"📁 歌曲分類：{song_cat}")
-            
-            st.markdown("---")
-            st.success("🎵 完整歌詞如下（請向下捲動閱讀）：")
-            
-            for line in str(lyrics_text).split('\n'):
-                if line.strip():
-                    st.markdown(f"### {line}")
-                else:
-                    st.write("") # 空行
-            st.markdown("---")
-
-    # 執行自動平滑滾動的邏輯
-    if st.session_state.scroll_target:
-        target_id = st.session_state.scroll_target
-        st.session_state.scroll_target = None  # 清除狀態避免重複觸發
-        components.html(f"""
-            <script>
-                setTimeout(function() {{
-                    const el = window.parent.document.getElementById('{target_id}');
-                    if (el) {{
-                        el.scrollIntoView({{ behavior: 'smooth' }});
-                    }}
-                }}, 200);
-            </script>
-        """, height=0)
+            label_song = f"🔥 正在播放：{display_title}" if is
