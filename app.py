@@ -9,11 +9,16 @@ import streamlit.components.v1 as components
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# 🎯 核心樣式修正：將大按鈕、radio選項字體放大，並將外距極致縮小讓排版更緊湊
+# 🎯 核心樣式修正：將大按鈕、radio選項字體放大，並將外距極致縮小讓排版更緊湊，同時隱藏右上角的 GitHub 原始碼連結
 st.markdown(
     """
     <style>
-    /* 1. 將選單的導引大標題微調 */
+    /* 1. 隱藏 Streamlit 右上角選單中可能暴露的 GitHub / 原始碼檢視按鈕 */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* 2. 將選單的導引大標題微調 */
     h2 {
         font-size: 24px !important;
         font-weight: bold !important;
@@ -22,19 +27,19 @@ st.markdown(
         margin-bottom: 8px !important;
     }
     
-    /* 2. 大按鈕內部的字體大小維持舒適度 */
+    /* 3. 大按鈕內部的字體大小維持舒適度 */
     div.stButton > button p {
         font-size: 20px !important;
         font-weight: bold !important;
     }
     
-    /* 3. 🎯 放大「按歌手查找 / 按風格分類查找」的 radio 選項字體 */
+    /* 4. 🎯 放大「按歌手查找 / 按風格分類查找」的 radio 選項字體 */
     div.stRadio label p {
         font-size: 20px !important;
         font-weight: bold !important;
     }
     
-    /* 4. 🎯 核心修正：將按鈕的高度與間距縮小，讓排版更緊湊、更好塞 */
+    /* 5. 🎯 核心修正：將按鈕的高度與間距縮小，讓排版更緊湊、更好塞 */
     div.stButton > button {
         min-height: 45px !important;    /* 高度縮小，減少佔用空間 */
         height: 45px !important;
@@ -45,7 +50,7 @@ st.markdown(
         border-radius: 8px !important;
     }
     
-    /* 5. 折疊按鈕字體 */
+    /* 6. 折疊按鈕字體 */
     .stExpander details summary p {
         font-size: 18px !important;
         font-weight: 500 !important;
