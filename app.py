@@ -80,7 +80,6 @@ if "管理員" in mode:
     st.title("👨‍💼 管理員後台管理 (實體檔案全站同步版)")
     st.markdown("---")
     
-    # 🎯 加上 key="admin_password" 確保密碼輸入框狀態穩定、不會莫名消失
     password = st.text_input("🔑 請輸入管理員登入密碼：", type="password", key="admin_password")
     
     if password == "Chiho888":
@@ -111,7 +110,7 @@ if "管理員" in mode:
                 except Exception as e:
                     st.error(f"❌ 解析失敗: {e}")
         st.dataframe(df, use_container_width=True)
-    elif password != "":
+    elif len(password) >= 8:
         st.error("🔒 密碼錯誤！")
 
 # --- 5. 觀眾模式 📱 ---
