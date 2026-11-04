@@ -13,7 +13,7 @@ st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="center
 st.markdown(
     """
     <style>
-    /* 1. 隱藏 Streamlit 右上角選單中可能暴露 / 原始碼檢視按鈕 */
+    /* 1. 隱藏 streamlit 右上角選單中可能暴露 / 原始碼檢視按鈕 */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
@@ -56,15 +56,31 @@ st.markdown(
         font-weight: 500 !important;
     }
     
-    /* 7. 🎯 強制手機版與電腦版皆維持 2 欄並列排版 */
-    [data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
+    /* 7. 🎯 返回按鈕專屬樣式（顏色稍微不一樣） */
+    button[aria-label*="返回"] {
+        background-color: #e2e8f0 !important;
+        color: #1e293b !important;
+        border: 1px solid #cbd5e1 !important;
+        font-weight: 600 !important;
     }
-    [data-testid="column"] {
-        flex: 1 1 50% !important;
-        width: 50% !important;
-        min-width: 50% !important;
+    button[aria-label*="返回"]:hover {
+        background-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+    
+    /* 8. 🎯 強制手機版與電腦版皆維持 2 欄並列排版 */
+    @media (max-width: 768px) {
+        [data-testid="stHorizontalBlock"] {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+        }
+        [data-testid="column"] {
+            flex: 1 1 50% !important;
+            width: 50% !important;
+            min-width: 50% !important;
+            max-width: 50% !important;
+        }
     }
     </style>
     """,
@@ -141,7 +157,6 @@ else:
     st.caption("✨ 歡迎現場的朋友！點選下方大按鈕看歌詞！")
     st.markdown("---")
     
-    # 🎯 修改 3：預設展開 QR Code (expanded=True)
     with st.expander("📱 點我展開現場專用 QR Code", expanded=True):
         qr_component_code = """
             <div id="qrcode-container" style="display:flex; flex-direction:column; align-items:center;">
@@ -217,11 +232,13 @@ else:
                 if i + j < len(singers):
                     singer = singers[i + j]
                     with cols[j]:
+                        st.markdown(f'<div id="singer_{singer}"></div>', unsafe_allow_html=True)
                         is_active = (st.session_state.filter_type == "singer") and (st.session_state.chosen_filter_val == singer)
                         label_text = f"👉 【 {singer} 】 👈" if is_active else f"👤 {singer}"
                         if st.button(label_text, key=f"btn_singer_{singer}", use_container_width=True):
                             st.session_state.filter_type = "singer"
                             st.session_state.chosen_filter_val = singer
+                            st.session_state.last_clicked_singer = singer
                             st.session_state.chosen_song = None
                             st.session_state.scroll_target = "section_songs"
                             st.rerun()
@@ -235,11 +252,13 @@ else:
                 if i + j < len(categories):
                     cat = categories[i + j]
                     with cols[j]:
+                        st.markdown(f'<div id="cat_{cat}"></div>', unsafe_allow_html=True)
                         is_active = (st.session_state.filter_type == "category") and (st.session_state.chosen_filter_val == cat)
                         label_text = f"👉 【 {cat} 】 👈" if is_active else f"📁 {cat}"
                         if st.button(label_text, key=f"btn_cat_{cat}", use_container_width=True):
                             st.session_state.filter_type = "category"
                             st.session_state.chosen_filter_val = cat
+                            st.session_state.last_clicked_category = cat
                             st.session_state.chosen_song = None
                             st.session_state.scroll_target = "section_songs"
                             st.rerun()
@@ -249,11 +268,11 @@ else:
         st.markdown('<div id="section_songs"></div>', unsafe_allow_html=True)
         st.markdown("---")
         
-        # 🎯 修改 2：在第二層上方加入返回按鈕（返回第一層選擇處）
+        back_target = f"singer_{st.session_state.get('last_clicked_singer', '')}" if st.session_state.filter_type == "singer" else f"cat_{st.session_state.get('last_clicked_category', '')}"
         if st.button("⬅️ 返回上一頁（選擇歌手/分類）", key="back_to_top_btn", use_container_width=True):
             st.session_state.chosen_filter_val = None
             st.session_state.chosen_song = None
-            st.session_state.scroll_target = "section_top"
+            st.session_state.scroll_target = back_target if st.session_state.get('last_clicked_singer') or st.session_state.get('last_clicked_category') else "section_top"
             st.rerun()
 
         filter_label = "歌手" if st.session_state.filter_type == "singer" else "分類"
@@ -272,60 +291,7 @@ else:
             display_title = f"《 {song} 》 - {singer_name}" if st.session_state.filter_type == "category" else f"《 {song} 》"
             label_song = f"🔥 正在播放：{display_title}" if is_selected else f"🎵 {display_title}"
             
+            st.markdown(f'<div id="song_{idx}_{song}"></div>', unsafe_allow_html=True)
             if st.button(label_song, key=f"btn_song_{idx}_{song}", use_container_width=True):
                 st.session_state.chosen_song = song
-                st.session_state.chosen_singer_for_song = singer_name
-                st.session_state.scroll_target = "section_lyrics"
-                st.rerun()
-
-    # 第三層：如果選了歌曲，設定錨點並顯示歌詞
-    if st.session_state.chosen_song:
-        st.markdown('<div id="section_lyrics"></div>', unsafe_allow_html=True)
-        st.markdown("---")
-        
-        # 🎯 修改 2：在第三層上方加入返回按鈕（返回第二層歌曲清單處）
-        if st.button("⬅️ 返回上一頁（歌曲清單）", key="back_to_songs_btn", use_container_width=True):
-            st.session_state.chosen_song = None
-            st.session_state.scroll_target = "section_songs"
-            st.rerun()
-        
-        target_singer = getattr(st.session_state, "chosen_singer_for_song", st.session_state.chosen_filter_val)
-        song_info = df[(df["歌曲名稱"] == st.session_state.chosen_song) & (df["歌手名稱"] == target_singer)]
-        
-        if song_info.empty:
-            song_info = df[df["歌曲名稱"] == st.session_state.chosen_song]
-
-        if not song_info.empty:
-            actual_singer = song_info.iloc[0]["歌手名稱"]
-            lyrics_text = song_info.iloc[0]["歌詞"]
-            song_cat = song_info.iloc[0]["分類"]
-            
-            st.markdown(f"# 🎤 {actual_singer}")
-            st.markdown(f"# 《 {st.session_state.chosen_song} 》")
-            if song_cat.strip():
-                st.caption(f"📁 歌曲分類：{song_cat}")
-            
-            st.markdown("---")
-            st.success("🎵 完整歌詞如下（請向下捲動閱讀）：")
-            
-            for line in str(lyrics_text).split('\n'):
-                if line.strip():
-                    st.markdown(f"### {line}")
-                else:
-                    st.write("") # 空行
-            st.markdown("---")
-
-    # 執行自動平滑滾動的邏輯
-    if st.session_state.scroll_target:
-        target_id = st.session_state.scroll_target
-        st.session_state.scroll_target = None  # 清除狀態避免重複觸發
-        components.html(f"""
-            <script>
-                setTimeout(function() {{
-                    const el = window.parent.document.getElementById('{target_id}');
-                    if (el) {{
-                        el.scrollIntoView({{ behavior: 'smooth' }});
-                    }}
-                }}, 200);
-            </script>
-        """, height=0)
+                st.session_
