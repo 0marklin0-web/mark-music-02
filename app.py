@@ -208,9 +208,6 @@ else:
         st.session_state.chosen_filter_val = None
         st.session_state.chosen_song = None
 
-    # 設定按鈕區塊的定位點
-    st.markdown('<div id="section_filter_buttons"></div>', unsafe_allow_html=True)
-
     if current_mode == "singer":
         singers = sorted([s for s in df["歌手名稱"].unique() if s.strip()])
         # 2 欄並列排版
@@ -226,7 +223,7 @@ else:
                             st.session_state.filter_type = "singer"
                             st.session_state.chosen_filter_val = singer
                             st.session_state.chosen_song = None
-                            st.session_state.scroll_target = "section_songs"  # 🎯 點擊時自動跳轉至歌曲清單
+                            st.session_state.scroll_target = "section_songs"
                             st.rerun()
 
     else:
@@ -244,7 +241,7 @@ else:
                             st.session_state.filter_type = "category"
                             st.session_state.chosen_filter_val = cat
                             st.session_state.chosen_song = None
-                            st.session_state.scroll_target = "section_songs"  # 🎯 點擊時自動跳轉至歌曲清單
+                            st.session_state.scroll_target = "section_songs"
                             st.rerun()
 
     # 第二層：如果選了歌手或分類，顯示對應的歌曲清單
@@ -252,11 +249,11 @@ else:
         st.markdown('<div id="section_songs"></div>', unsafe_allow_html=True)
         st.markdown("---")
         
-        # ⬅️ 返回上一頁按鈕：回到原本在選單所選擇的內容位置
+        # ⬅️ 返回上一頁按鈕：回到選擇歌手/分類
         if st.button("⬅️ 返回上一頁（選擇歌手/分類）", key="back_to_top_btn", use_container_width=True, type="primary"):
             st.session_state.chosen_filter_val = None
             st.session_state.chosen_song = None
-            st.session_state.scroll_target = "section_filter_buttons"  # 🎯 返回時準確回到選單按鈕區塊
+            st.session_state.scroll_target = "section_top"
             st.rerun()
 
         filter_label = "歌手" if st.session_state.filter_type == "singer" else "分類"
@@ -278,18 +275,17 @@ else:
             if st.button(label_song, key=f"btn_song_{idx}_{song}", use_container_width=True):
                 st.session_state.chosen_song = song
                 st.session_state.chosen_singer_for_song = singer_name
-                st.session_state.scroll_target = "section_lyrics"  # 🎯 點擊歌曲自動跳轉至歌詞
+                st.session_state.scroll_target = "section_lyrics"
                 st.rerun()
 
-    # 第三層：如果選了歌曲，設定錨點並顯示歌詞
+    # 第三層：如果選了歌曲，顯示歌詞
     if st.session_state.chosen_song:
         st.markdown('<div id="section_lyrics"></div>', unsafe_allow_html=True)
         st.markdown("---")
         
-        # ⬅️ 返回上一頁按鈕（歌曲清單）
+        # ⬅️ 返回上一頁按鈕（從歌詞返回歌曲清單）：直接清除 chosen_song，不進行強制滾動，讓畫面完美停留在原先選定該歌手/分類的歌曲清單位置
         if st.button("⬅️ 返回上一頁（歌曲清單）", key="back_to_songs_btn", use_container_width=True, type="primary"):
             st.session_state.chosen_song = None
-            st.session_state.scroll_target = "section_songs"  # 🎯 從歌詞返回時自動回到歌曲清單
             st.rerun()
         
         target_singer = getattr(st.session_state, "chosen_singer_for_song", st.session_state.chosen_filter_val)
@@ -318,7 +314,7 @@ else:
                     st.write("") # 空行
             st.markdown("---")
 
-    # 執行自動平滑滾動的邏輯
+    # 執行自動平滑滾動的邏輯（僅在點擊選單項目或切換至歌詞時觸發）
     if st.session_state.scroll_target:
         target_id = st.session_state.scroll_target
         st.session_state.scroll_target = None  # 清除狀態避免重複觸發
