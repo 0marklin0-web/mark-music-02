@@ -131,7 +131,6 @@ else:
     st.markdown("---")
     
     with st.expander("📱 點我展開現場專用 QR Code"):
-        current_url = "https://placeholder.url"
         qr_component_code = """
             <div id="qrcode-container" style="display:flex; flex-direction:column; align-items:center;">
                 <p style="font-size:14px; color:#555;">正在產生現場專用 QR Code...</p>
@@ -140,4 +139,66 @@ else:
             <script>
                 const currentUrl = window.parent.location.href;
                 const container = document.getElementById('qrcode-container');
-                container.innerHTML
+                container.innerHTML = '';
+                
+                const qrDiv = document.createElement('div');
+                container.appendChild(qrDiv);
+                
+                new QRCode(qrDiv, {
+                    text: currentUrl,
+                    width: 180,
+                    height: 180,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+                
+                const caption = document.createElement('p');
+                caption.style.cssText = "font-size: 14px; color: #31333F; margin-top: 10px; text-align: center;";
+                caption.innerText = "現場觀眾掃描此碼即可進入此點歌本";
+                container.appendChild(caption);
+            </script>
+        """
+        components.html(qr_component_code, height=240)
+
+    # 利用 Session State 記錄點選狀態與滾動目標
+    if "filter_type" not in st.session_state:
+        st.session_state.filter_type = "按歌手查找"
+    if "chosen_filter_val" not in st.session_state:
+        st.session_state.chosen_filter_val = None
+    if "chosen_song" not in st.session_state:
+        st.session_state.chosen_song = None
+    if "scroll_target" not in st.session_state:
+        st.session_state.scroll_target = None
+
+    # 第一層：1. 請選擇點歌方式 (歌手 vs 分類)
+    st.markdown("## 🎤 1. 請選擇瀏覽與點歌方式：")
+    
+    search_by = st.radio(
+        "請選擇分類依據：",
+        ["👤 按歌手查找", "📁 按風格分類查找"],
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+    
+    if search_by == "👤 按歌手查找":
+        singers = sorted([s for s in df["歌手名稱"].unique() if s.strip()])
+        # 🎯 改為 2 欄並列排版
+        for i in range(0, len(singers), 2):
+            cols = st.columns(2)
+            for j in range(2):
+                if i + j < len(singers):
+                    singer = singers[i + j]
+                    with cols[j]:
+                        is_active = (st.session_state.filter_type == "singer") and (st.session_state.chosen_filter_val == singer)
+                        label_text = f"👉 【 {singer} 】 👈" if is_active else f"👤 {singer}"
+                        if st.button(label_text, key=f"btn_singer_{singer}", use_container_width=True):
+                            st.session_state.filter_type = "singer"
+                            st.session_state.chosen_filter_val = singer
+                            st.session_state.chosen_song = None
+                            st.session_state.scroll_target = "section_songs"
+                            st.rerun()
+
+    else:
+        categories = sorted([c for c in df["分類"].unique() if c.strip()])
+        # 🎯 改
