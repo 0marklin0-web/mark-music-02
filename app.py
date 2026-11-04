@@ -85,9 +85,9 @@ if "管理員" in mode:
     if password == "Chiho888":
         st.success("🔓 認證成功！您現在可以更新歌單資料。")
         st.markdown("### 📋 方式一：複製貼上更新（💯 實體寫入，手機 100% 絕對同步）")
-        paste_data = st.text_area("📥 請在此處貼上您從 Excel 複製的全部歌單內容：", height=200)
+        paste_data = st.text_area("📥 請在此處貼上您從 Excel 複製的全部歌單內容：", height=200, key="paste_data_area")
         
-        if st.button("🔥 發佈最新歌單"):
+        if st.button("🔥 發佈最新歌單", key="publish_btn"):
             if paste_data.strip():
                 try:
                     new_df = pd.read_csv(io.StringIO(paste_data), sep='\t')
@@ -110,7 +110,7 @@ if "管理員" in mode:
                 except Exception as e:
                     st.error(f"❌ 解析失敗: {e}")
         st.dataframe(df, use_container_width=True)
-    elif len(password) >= 8:
+    elif password != "":
         st.error("🔒 密碼錯誤！")
 
 # --- 5. 觀眾模式 📱 ---
