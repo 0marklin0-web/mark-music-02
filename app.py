@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# 🎯 核心樣式修正：將大按鈕的上下高度與外距（間距）極致縮小，讓排版更緊湊
+# 🎯 核心樣式修正：將大按鈕、radio選項字體放大，並將外距極致縮小讓排版更緊湊
 st.markdown(
     """
     <style>
@@ -28,7 +28,13 @@ st.markdown(
         font-weight: bold !important;
     }
     
-    /* 3. 🎯 核心修正：將按鈕的高度與間距縮小，讓排版更緊湊、更好塞 */
+    /* 3. 🎯 放大「按歌手查找 / 按風格分類查找」的 radio 選項字體 */
+    div.stRadio label p {
+        font-size: 20px !important;
+        font-weight: bold !important;
+    }
+    
+    /* 4. 🎯 核心修正：將按鈕的高度與間距縮小，讓排版更緊湊、更好塞 */
     div.stButton > button {
         min-height: 45px !important;    /* 高度縮小，減少佔用空間 */
         height: 45px !important;
@@ -39,7 +45,7 @@ st.markdown(
         border-radius: 8px !important;
     }
     
-    /* 4. 折疊按鈕字體 */
+    /* 5. 折疊按鈕字體 */
     .stExpander details summary p {
         font-size: 18px !important;
         font-weight: 500 !important;
@@ -120,14 +126,38 @@ else:
     st.markdown("---")
     
     with st.expander("📱 點我展開現場專用 QR Code"):
-        current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
-        qr = qrcode.QRCode(version=1, box_size=10, border=3)
-        qr.add_data(current_url)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-        buf = BytesIO()
-        img.save(buf)
-        st.image(buf.getvalue(), caption="現場觀眾掃描此碼即可進入此點歌本", width=180)
+        # 🎯 安全優化：透過前端 JS 動態取得當前真實網址，避免將網域/GitHub 寫死在原始碼中
+        current_url = "https://placeholder.url"
+        qr_component_code = """
+            <div id="qrcode-container" style="display:flex; flex-direction:column; align-items:center;">
+                <p style="font-size:14px; color:#555;">正在產生現場專用 QR Code...</p>
+            </div>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+            <script>
+                const currentUrl = window.parent.location.href;
+                const container = document.getElementById('qrcode-container');
+                container.innerHTML = '';
+                
+                // 建立 QR Code 區塊
+                const qrDiv = document.createElement('div');
+                container.appendChild(qrDiv);
+                
+                new QRCode(qrDiv, {
+                    text: currentUrl,
+                    width: 180,
+                    height: 180,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+                
+                const caption = document.createElement('p');
+                caption.style.cssText = "font-size: 14px; color: #31333F; margin-top: 10px; text-align: center;";
+                caption.innerText = "現場觀眾掃描此碼即可進入此點歌本";
+                container.appendChild(caption);
+            </script>
+        """
+        components.html(qr_component_code, height=240)
 
     # 利用 Session State 記錄點選狀態與滾動目標
     if "filter_type" not in st.session_state:
