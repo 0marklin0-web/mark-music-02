@@ -55,6 +55,15 @@ st.markdown(
         font-size: 18px !important;
         font-weight: 500 !important;
     }
+    
+    /* 7. 🎯 強制手機版維持 2 欄並列排版，不自動堆疊為一行 */
+    @media (max-width: 640px) {
+        [data-testid="column"] {
+            width: 50% !important;
+            flex: 1 1 50% !important;
+            min-width: 50% !important;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True
