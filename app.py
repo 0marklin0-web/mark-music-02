@@ -109,7 +109,8 @@ if "管理員" in mode:
                         st.error("❌ 欄位不符！")
                 except Exception as e:
                     st.error(f"❌ 解析失敗: {e}")
-        st.dataframe(df, use_container_width=True)
+        # 🎯 修正處：將容易引發快取預載錯誤的 dataframe 改為 st.table
+        st.table(df)
     elif password != "":
         st.error("🔒 密碼錯誤！")
 
