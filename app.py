@@ -112,10 +112,8 @@ if "管理員" in mode:
         if st.button("🔥 發佈最新歌單", key="publish_btn"):
             if paste_data.strip():
                 try:
-                    new_df = pd.read_csv(io.StringIO(paste_data), sep='\t')
-                    if len(new_df.columns) <= 1:
-                        new_df = pd.read_csv(io.StringIO(paste_data), sep=',')
-                    
+                    # 使用自動偵測分隔符號 (支援 Tab 或逗號)
+                    new_df = pd.read_csv(io.StringIO(paste_data), sep=None, engine='python')
                     new_df.dropna(how='all', inplace=True)
                     new_df.columns = [str(col).strip() for col in new_df.columns]
                     
@@ -128,7 +126,7 @@ if "管理員" in mode:
                         st.balloons()
                         st.rerun()
                     else:
-                        st.error("❌ 欄位不符！")
+                        st.error("❌ 欄位不符！請確認包含：歌手名稱、歌曲名稱、歌詞、分類")
                 except Exception as e:
                     st.error(f"❌ 解析失敗: {e}")
         st.table(df)
@@ -223,7 +221,7 @@ else:
                             st.session_state.filter_type = "singer"
                             st.session_state.chosen_filter_val = singer
                             st.session_state.chosen_song = None
-                            st.session_state.scroll_target = f"btn_singer_{singer}"
+                            st.session_state.scroll_target = "section_songs"
                             st.rerun()
 
     else:
@@ -241,7 +239,7 @@ else:
                             st.session_state.filter_type = "category"
                             st.session_state.chosen_filter_val = cat
                             st.session_state.chosen_song = None
-                            st.session_state.scroll_target = f"btn_cat_{cat}"
+                            st.session_state.scroll_target = "section_songs"
                             st.rerun()
 
     # 第二層：如果選了歌手或分類，顯示對應的歌曲清單
@@ -249,12 +247,11 @@ else:
         st.markdown('<div id="section_songs"></div>', unsafe_allow_html=True)
         st.markdown("---")
         
-        # ⬅️ 返回上一頁按鈕（返回到剛剛點選的選單項目位置處）
+        # ⬅️ 返回上一頁按鈕（使用 type="primary" 呈現主題色彩區別）
         if st.button("⬅️ 返回上一頁（選擇歌手/分類）", key="back_to_top_btn", use_container_width=True, type="primary"):
-            target_back = f"btn_singer_{st.session_state.chosen_filter_val}" if st.session_state.filter_type == "singer" else f"btn_cat_{st.session_state.chosen_filter_val}"
             st.session_state.chosen_filter_val = None
             st.session_state.chosen_song = None
-            st.session_state.scroll_target = target_back
+            st.session_state.scroll_target = "section_top"
             st.rerun()
 
         filter_label = "歌手" if st.session_state.filter_type == "singer" else "分類"
@@ -276,7 +273,7 @@ else:
             if st.button(label_song, key=f"btn_song_{idx}_{song}", use_container_width=True):
                 st.session_state.chosen_song = song
                 st.session_state.chosen_singer_for_song = singer_name
-                st.session_state.scroll_target = f"btn_song_{idx}_{song}"
+                st.session_state.scroll_target = "section_lyrics"
                 st.rerun()
 
     # 第三層：如果選了歌曲，設定錨點並顯示歌詞
@@ -284,21 +281,10 @@ else:
         st.markdown('<div id="section_lyrics"></div>', unsafe_allow_html=True)
         st.markdown("---")
         
-        # ⬅️ 返回上一頁按鈕（返回到剛剛點選的歌曲項目位置處）
+        # ⬅️ 返回上一頁按鈕（使用 type="primary" 呈現主題色彩區別）
         if st.button("⬅️ 返回上一頁（歌曲清單）", key="back_to_songs_btn", use_container_width=True, type="primary"):
-            # 尋找當前歌曲在列表中的對應按鈕 key 以便準確捲回該歌曲位置
-            target_song_key = "section_songs"
-            if st.session_state.chosen_filter_val:
-                if st.session_state.filter_type == "singer":
-                    f_df = df[df["歌手名稱"] == st.session_state.chosen_filter_val]
-                else:
-                    f_df = df[df["分類"] == st.session_state.chosen_filter_val]
-                for idx, row in f_df.iterrows():
-                    if row["歌曲名稱"] == st.session_state.chosen_song:
-                        target_song_key = f"btn_song_{idx}_{row['歌曲名稱']}"
-                        break
             st.session_state.chosen_song = None
-            st.session_state.scroll_target = target_song_key
+            st.session_state.scroll_target = "section_songs"
             st.rerun()
         
         target_singer = getattr(st.session_state, "chosen_singer_for_song", st.session_state.chosen_filter_val)
@@ -341,4 +327,3 @@ else:
                 }}, 200);
             </script>
         """, height=0)
-      
