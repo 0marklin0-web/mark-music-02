@@ -140,40 +140,4 @@ else:
             <script>
                 const currentUrl = window.parent.location.href;
                 const container = document.getElementById('qrcode-container');
-                container.innerHTML = '';
-                
-                const qrDiv = document.createElement('div');
-                container.appendChild(qrDiv);
-                
-                new QRCode(qrDiv, {
-                    text: currentUrl,
-                    width: 180,
-                    height: 180,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.H
-                });
-                
-                const caption = document.createElement('p');
-                caption.style.cssText = "font-size: 14px; color: #31333F; margin-top: 10px; text-align: center;";
-                caption.innerText = "現場觀眾掃描此碼即可進入此點歌本";
-                container.appendChild(caption);
-            </script>
-        """
-        components.html(qr_component_code, height=240)
-
-    # 利用 Session State 記錄點選狀態與滾動目標
-    if "filter_type" not in st.session_state:
-        st.session_state.filter_type = "按歌手查找"
-    if "chosen_filter_val" not in st.session_state:
-        st.session_state.chosen_filter_val = None
-    if "chosen_song" not in st.session_state:
-        st.session_state.chosen_song = None
-    if "scroll_target" not in st.session_state:
-        st.session_state.scroll_target = None
-
-    # 第一層：1. 請選擇點歌方式 (歌手 vs 分類)
-    st.markdown("## 🎤 1. 請選擇瀏覽與點歌方式：")
-    
-    # 切換頁籤：按歌手 / 按分類
-    search_
+                container.innerHTML
