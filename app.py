@@ -56,13 +56,15 @@ st.markdown(
         font-weight: 500 !important;
     }
     
-    /* 7. 🎯 強制手機版維持 2 欄並列排版，不自動堆疊為一行 */
-    @media (max-width: 640px) {
-        [data-testid="column"] {
-            width: 50% !important;
-            flex: 1 1 50% !important;
-            min-width: 50% !important;
-        }
+    /* 7. 🎯 強制手機版與電腦版皆維持 2 欄並列排版 */
+    [data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+    }
+    [data-testid="column"] {
+        flex: 1 1 50% !important;
+        width: 50% !important;
+        min-width: 50% !important;
     }
     </style>
     """,
@@ -139,7 +141,8 @@ else:
     st.caption("✨ 歡迎現場的朋友！點選下方大按鈕看歌詞！")
     st.markdown("---")
     
-    with st.expander("📱 點我展開現場專用 QR Code"):
+    # 🎯 修改 3：預設展開 QR Code (expanded=True)
+    with st.expander("📱 點我展開現場專用 QR Code", expanded=True):
         qr_component_code = """
             <div id="qrcode-container" style="display:flex; flex-direction:column; align-items:center;">
                 <p style="font-size:14px; color:#555;">正在產生現場專用 QR Code...</p>
@@ -181,6 +184,7 @@ else:
         st.session_state.scroll_target = None
 
     # 第一層：1. 請選擇點歌方式 (歌手 vs 分類)
+    st.markdown('<div id="section_top"></div>', unsafe_allow_html=True)
     st.markdown("## 🎤 1. 請選擇瀏覽與點歌方式：")
     
     search_by = st.radio(
@@ -245,6 +249,13 @@ else:
         st.markdown('<div id="section_songs"></div>', unsafe_allow_html=True)
         st.markdown("---")
         
+        # 🎯 修改 2：在第二層上方加入返回按鈕（返回第一層選擇處）
+        if st.button("⬅️ 返回上一頁（選擇歌手/分類）", key="back_to_top_btn", use_container_width=True):
+            st.session_state.chosen_filter_val = None
+            st.session_state.chosen_song = None
+            st.session_state.scroll_target = "section_top"
+            st.rerun()
+
         filter_label = "歌手" if st.session_state.filter_type == "singer" else "分類"
         st.markdown(f"## 🎶 2. 【{st.session_state.chosen_filter_val}】({filter_label}) 的歌曲清單：")
         
@@ -271,6 +282,12 @@ else:
     if st.session_state.chosen_song:
         st.markdown('<div id="section_lyrics"></div>', unsafe_allow_html=True)
         st.markdown("---")
+        
+        # 🎯 修改 2：在第三層上方加入返回按鈕（返回第二層歌曲清單處）
+        if st.button("⬅️ 返回上一頁（歌曲清單）", key="back_to_songs_btn", use_container_width=True):
+            st.session_state.chosen_song = None
+            st.session_state.scroll_target = "section_songs"
+            st.rerun()
         
         target_singer = getattr(st.session_state, "chosen_singer_for_song", st.session_state.chosen_filter_val)
         song_info = df[(df["歌曲名稱"] == st.session_state.chosen_song) & (df["歌手名稱"] == target_singer)]
