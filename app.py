@@ -207,4 +207,100 @@ else:
 
     if current_mode == "singer":
         singers = sorted([s for s in df["歌手名稱"].unique() if s.strip()])
-        # 2
+        # 2 欄並列排版
+        for i in range(0, len(singers), 2):
+            cols = st.columns(2)
+            for j in range(2):
+                if i + j < len(singers):
+                    singer = singers[i + j]
+                    with cols[j]:
+                        is_active = (st.session_state.filter_type == "singer") and (st.session_state.chosen_filter_val == singer)
+                        label_text = f"👉 【 {singer} 】 👈" if is_active else f"👤 {singer}"
+                        if st.button(label_text, key=f"btn_singer_{singer}", use_container_width=True):
+                            st.session_state.filter_type = "singer"
+                            st.session_state.chosen_filter_val = singer
+                            st.session_state.chosen_song = None
+                            st.rerun()
+
+    else:
+        categories = sorted([c for c in df["分類"].unique() if c.strip()])
+        # 2 欄並列排版
+        for i in range(0, len(categories), 2):
+            cols = st.columns(2)
+            for j in range(2):
+                if i + j < len(categories):
+                    cat = categories[i + j]
+                    with cols[j]:
+                        is_active = (st.session_state.filter_type == "category") and (st.session_state.chosen_filter_val == cat)
+                        label_text = f"👉 【 {cat} 】 👈" if is_active else f"📁 {cat}"
+                        if st.button(label_text, key=f"btn_cat_{cat}", use_container_width=True):
+                            st.session_state.filter_type = "category"
+                            st.session_state.chosen_filter_val = cat
+                            st.session_state.chosen_song = None
+                            st.rerun()
+
+    # 第二層：如果選了歌手或分類，顯示對應的歌曲清單
+    if st.session_state.chosen_filter_val:
+        st.markdown("---")
+        
+        # ⬅️ 返回上一頁按鈕（返回選擇歌手/分類）
+        if st.button("⬅️ 返回上一頁（選擇歌手/分類）", key="back_to_top_btn", use_container_width=True, type="primary"):
+            st.session_state.chosen_filter_val = None
+            st.session_state.chosen_song = None
+            st.rerun()
+
+        filter_label = "歌手" if st.session_state.filter_type == "singer" else "分類"
+        st.markdown(f"## 🎶 2. 【{st.session_state.chosen_filter_val}】({filter_label}) 的歌曲清單：")
+        
+        if st.session_state.filter_type == "singer":
+            filtered_df = df[df["歌手名稱"] == st.session_state.chosen_filter_val]
+        else:
+            filtered_df = df[df["分類"] == st.session_state.chosen_filter_val]
+        
+        for idx, row in filtered_df.iterrows():
+            song = row["歌曲名稱"]
+            singer_name = row["歌手名稱"]
+            is_selected = st.session_state.chosen_song == song
+            
+            display_title = f"《 {song} 》 - {singer_name}" if st.session_state.filter_type == "category" else f"《 {song} 》"
+            label_song = f"🔥 正在播放：{display_title}" if is_selected else f"🎵 {display_title}"
+            
+            if st.button(label_song, key=f"btn_song_{idx}_{song}", use_container_width=True):
+                st.session_state.chosen_song = song
+                st.session_state.chosen_singer_for_song = singer_name
+                st.rerun()
+
+    # 第三層：如果選了歌曲，顯示歌詞（並且保留第二層的歌曲清單在畫面上方）
+    if st.session_state.chosen_song:
+        st.markdown("---")
+        
+        # ⬅️ 返回上一頁按鈕（從歌詞返回歌曲清單時，只清空 chosen_song，畫面會停留在原先選定該歌手/分類的歌曲清單位置）
+        if st.button("⬅️ 返回上一頁（歌曲清單）", key="back_to_songs_btn", use_container_width=True, type="primary"):
+            st.session_state.chosen_song = None
+            st.rerun()
+        
+        target_singer = getattr(st.session_state, "chosen_singer_for_song", st.session_state.chosen_filter_val)
+        song_info = df[(df["歌曲名稱"] == st.session_state.chosen_song) & (df["歌手名稱"] == target_singer)]
+        
+        if song_info.empty:
+            song_info = df[df["歌曲名稱"] == st.session_state.chosen_song]
+
+        if not song_info.empty:
+            actual_singer = song_info.iloc[0]["歌手名稱"]
+            lyrics_text = song_info.iloc[0]["歌詞"]
+            song_cat = song_info.iloc[0]["分類"]
+            
+            st.markdown(f"# 🎤 {actual_singer}")
+            st.markdown(f"# 《 {st.session_state.chosen_song} 》")
+            if song_cat.strip():
+                st.caption(f"📁 歌曲分類：{song_cat}")
+            
+            st.markdown("---")
+            st.success("🎵 完整歌詞如下（請向下捲動閱讀）：")
+            
+            for line in str(lyrics_text).split('\n'):
+                if line.strip():
+                    st.markdown(f"### {line}")
+                else:
+                    st.write("") # 空行
+            st.markdown("---")
