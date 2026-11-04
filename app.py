@@ -13,7 +13,7 @@ st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="center
 st.markdown(
     """
     <style>
-    /* 1. 隱藏 Streamlit 右上角選單中可能暴露 / 原始碼檢視按鈕 */
+    /* 1. 隱藏 Streamlit 右上角選單中可能暴露的 GitHub / 原始碼檢視按鈕 */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
@@ -54,17 +54,6 @@ st.markdown(
     .stExpander details summary p {
         font-size: 18px !important;
         font-weight: 500 !important;
-    }
-    
-    /* 7. 🎯 強制手機版與電腦版皆維持 2 欄並列排版 */
-    [data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-    }
-    [data-testid="column"] {
-        flex: 1 1 50% !important;
-        width: 50% !important;
-        min-width: 50% !important;
     }
     </style>
     """,
@@ -112,8 +101,10 @@ if "管理員" in mode:
         if st.button("🔥 發佈最新歌單", key="publish_btn"):
             if paste_data.strip():
                 try:
-                    # 使用自動偵測分隔符號 (支援 Tab 或逗號)
-                    new_df = pd.read_csv(io.StringIO(paste_data), sep=None, engine='python')
+                    new_df = pd.read_csv(io.StringIO(paste_data), sep='\t')
+                    if len(new_df.columns) <= 1:
+                        new_df = pd.read_csv(io.StringIO(paste_data), sep=',')
+                    
                     new_df.dropna(how='all', inplace=True)
                     new_df.columns = [str(col).strip() for col in new_df.columns]
                     
@@ -126,15 +117,10 @@ if "管理員" in mode:
                         st.balloons()
                         st.rerun()
                     else:
-                        st.error("❌ 欄位不符！請確認包含：歌手名稱、歌曲名稱、歌詞、分類")
+                        st.error("❌ 欄位不符！")
                 except Exception as e:
                     st.error(f"❌ 解析失敗: {e}")
-        
-        # 📌 恢復並優化最下方的目前歌單預覽表格
-        st.markdown("---")
-        st.markdown("### 📊 目前雲端歌單總覽")
         st.table(df)
-        
     elif password != "":
         st.error("🔒 密碼錯誤！")
 
@@ -144,8 +130,8 @@ else:
     st.caption("✨ 歡迎現場的朋友！點選下方大按鈕看歌詞！")
     st.markdown("---")
     
-    # 預設展開 QR Code (expanded=True)
-    with st.expander("📱 點我展開現場專用 QR Code", expanded=True):
+    with st.expander("📱 點我展開現場專用 QR Code"):
+        # 🎯 安全優化：透過前端 JS 動態取得當前真實網址，避免將網域/GitHub 寫死在原始碼中
         qr_component_code = """
             <div id="qrcode-container" style="display:flex; flex-direction:column; align-items:center;">
                 <p style="font-size:14px; color:#555;">正在產生現場專用 QR Code...</p>
@@ -178,7 +164,7 @@ else:
 
     # 利用 Session State 記錄點選狀態與滾動目標
     if "filter_type" not in st.session_state:
-        st.session_state.filter_type = "singer"
+        st.session_state.filter_type = "按歌手查找"
     if "chosen_filter_val" not in st.session_state:
         st.session_state.chosen_filter_val = None
     if "chosen_song" not in st.session_state:
@@ -187,78 +173,44 @@ else:
         st.session_state.scroll_target = None
 
     # 第一層：1. 請選擇點歌方式 (歌手 vs 分類)
-    st.markdown('<div id="section_top"></div>', unsafe_allow_html=True)
     st.markdown("## 🎤 1. 請選擇瀏覽與點歌方式：")
     
     search_by = st.radio(
         "請選擇分類依據：",
         ["👤 按歌手查找", "📁 按風格分類查找"],
         horizontal=True,
-        label_visibility="collapsed",
-        key="search_by_radio"
+        label_visibility="collapsed"
     )
-
-    # 判斷當前選擇的查找模式
-    current_mode = "singer" if "按歌手" in search_by else "category"
-
-    # 如果切換了查找模式，自動清空先前的選項以確保畫面正常顯示對應清單
-    if "last_mode" not in st.session_state:
-        st.session_state.last_mode = current_mode
-
-    if st.session_state.last_mode != current_mode:
-        st.session_state.last_mode = current_mode
-        st.session_state.filter_type = current_mode
-        st.session_state.chosen_filter_val = None
-        st.session_state.chosen_song = None
-
-    if current_mode == "singer":
+    
+    if search_by == "👤 按歌手查找":
         singers = sorted([s for s in df["歌手名稱"].unique() if s.strip()])
-        # 2 欄並列排版
-        for i in range(0, len(singers), 2):
-            cols = st.columns(2)
-            for j in range(2):
-                if i + j < len(singers):
-                    singer = singers[i + j]
-                    with cols[j]:
-                        is_active = (st.session_state.filter_type == "singer") and (st.session_state.chosen_filter_val == singer)
-                        label_text = f"👉 【 {singer} 】 👈" if is_active else f"👤 {singer}"
-                        if st.button(label_text, key=f"btn_singer_{singer}", use_container_width=True):
-                            st.session_state.filter_type = "singer"
-                            st.session_state.chosen_filter_val = singer
-                            st.session_state.chosen_song = None
-                            st.session_state.scroll_target = "section_songs"
-                            st.rerun()
+        for singer in singers:
+            is_active = (st.session_state.filter_type == "singer") and (st.session_state.chosen_filter_val == singer)
+            label_text = f"👉 【 {singer} 】 👈" if is_active else f"👤 {singer}"
+            if st.button(label_text, key=f"btn_singer_{singer}", use_container_width=True):
+                st.session_state.filter_type = "singer"
+                st.session_state.chosen_filter_val = singer
+                st.session_state.chosen_song = None
+                st.session_state.scroll_target = "section_songs"
+                st.rerun()
 
     else:
         categories = sorted([c for c in df["分類"].unique() if c.strip()])
-        # 2 欄並列排版
-        for i in range(0, len(categories), 2):
-            cols = st.columns(2)
-            for j in range(2):
-                if i + j < len(categories):
-                    cat = categories[i + j]
-                    with cols[j]:
-                        is_active = (st.session_state.filter_type == "category") and (st.session_state.chosen_filter_val == cat)
-                        label_text = f"👉 【 {cat} 】 👈" if is_active else f"📁 {cat}"
-                        if st.button(label_text, key=f"btn_cat_{cat}", use_container_width=True):
-                            st.session_state.filter_type = "category"
-                            st.session_state.chosen_filter_val = cat
-                            st.session_state.chosen_song = None
-                            st.session_state.scroll_target = "section_songs"
-                            st.rerun()
+        for cat in categories:
+            is_active = (st.session_state.filter_type == "category") and (st.session_state.chosen_filter_val == cat)
+            label_text = f"👉 【 {cat} 】 👈" if is_active else f"📁 {cat}"
+            if st.button(label_text, key=f"btn_cat_{cat}", use_container_width=True):
+                st.session_state.filter_type = "category"
+                st.session_state.chosen_filter_val = cat
+                st.session_state.chosen_song = None
+                st.session_state.scroll_target = "section_songs"
+                st.rerun()
 
     # 第二層：如果選了歌手或分類，顯示對應的歌曲清單
     if st.session_state.chosen_filter_val:
         st.markdown('<div id="section_songs"></div>', unsafe_allow_html=True)
         st.markdown("---")
         
-        # ⬅️ 返回上一頁按鈕（使用 type="primary" 呈現主題色彩區別）
-        if st.button("⬅️ 返回上一頁（選擇歌手/分類）", key="back_to_top_btn", use_container_width=True, type="primary"):
-            st.session_state.chosen_filter_val = None
-            st.session_state.chosen_song = None
-            st.session_state.scroll_target = "section_top"
-            st.rerun()
-
         filter_label = "歌手" if st.session_state.filter_type == "singer" else "分類"
         st.markdown(f"## 🎶 2. 【{st.session_state.chosen_filter_val}】({filter_label}) 的歌曲清單：")
         
@@ -285,12 +237,6 @@ else:
     if st.session_state.chosen_song:
         st.markdown('<div id="section_lyrics"></div>', unsafe_allow_html=True)
         st.markdown("---")
-        
-        # ⬅️ 返回上一頁按鈕（使用 type="primary" 呈現主題色彩區別）
-        if st.button("⬅️ 返回上一頁（歌曲清單）", key="back_to_songs_btn", use_container_width=True, type="primary"):
-            st.session_state.chosen_song = None
-            st.session_state.scroll_target = "section_songs"
-            st.rerun()
         
         target_singer = getattr(st.session_state, "chosen_singer_for_song", st.session_state.chosen_filter_val)
         song_info = df[(df["歌曲名稱"] == st.session_state.chosen_song) & (df["歌手名稱"] == target_singer)]
