@@ -130,52 +130,95 @@ else:
         st.image(buf.getvalue(), caption="現場觀眾掃描此碼即可進入此點歌本", width=180)
 
     # 利用 Session State 記錄點選狀態與滾動目標
-    if "chosen_singer" not in st.session_state:
-        st.session_state.chosen_singer = None
+    if "filter_type" not in st.session_state:
+        st.session_state.filter_type = "按歌手查找"
+    if "chosen_filter_val" not in st.session_state:
+        st.session_state.chosen_filter_val = None
     if "chosen_song" not in st.session_state:
         st.session_state.chosen_song = None
     if "scroll_target" not in st.session_state:
         st.session_state.scroll_target = None
 
-    # 第一層：用大標題引導選擇歌手
-    st.markdown("## 🎤 1. 請點選歌手選單：")
+    # 第一層：1. 請選擇點歌方式 (歌手 vs 分類)
+    st.markdown("## 🎤 1. 請選擇瀏覽與點歌方式：")
     
-    singers = sorted(list(df["歌手名稱"].unique()))
+    # 切換頁籤：按歌手 / 按分類
+    search_by = st.radio(
+        "請選擇分類依據：",
+        ["👤 按歌手查找", "📁 按風格分類查找"],
+        horizontal=True,
+        label_visibility="collapsed"
+    )
     
-    for singer in singers:
-        label_text = f"👉 【 {singer} 】 👈" if st.session_state.chosen_singer == singer else f"👤 {singer}"
-        if st.button(label_text, key=f"btn_singer_{singer}", use_container_width=True):
-            st.session_state.chosen_singer = singer
-            st.session_state.chosen_song = None  # 切換歌手時重設歌曲
-            st.session_state.scroll_target = "section_songs"  # 設定自動跳轉目標
-            st.rerun()
+    if search_by == "👤 按歌手查找":
+        singers = sorted([s for s in df["歌手名稱"].unique() if s.strip()])
+        for singer in singers:
+            is_active = (st.session_state.filter_type == "singer") and (st.session_state.chosen_filter_val == singer)
+            label_text = f"👉 【 {singer} 】 👈" if is_active else f"👤 {singer}"
+            if st.button(label_text, key=f"btn_singer_{singer}", use_container_width=True):
+                st.session_state.filter_type = "singer"
+                st.session_state.chosen_filter_val = singer
+                st.session_state.chosen_song = None
+                st.session_state.scroll_target = "section_songs"
+                st.rerun()
 
-    # 第二層：如果選了歌手，設定錨點並顯示歌曲清單
-    if st.session_state.chosen_singer:
+    else:
+        categories = sorted([c for c in df["分類"].unique() if c.strip()])
+        for cat in categories:
+            is_active = (st.session_state.filter_type == "category") and (st.session_state.chosen_filter_val == cat)
+            label_text = f"👉 【 {cat} 】 👈" if is_active else f"📁 {cat}"
+            if st.button(label_text, key=f"btn_cat_{cat}", use_container_width=True):
+                st.session_state.filter_type = "category"
+                st.session_state.chosen_filter_val = cat
+                st.session_state.chosen_song = None
+                st.session_state.scroll_target = "section_songs"
+                st.rerun()
+
+    # 第二層：如果選了歌手或分類，顯示對應的歌曲清單
+    if st.session_state.chosen_filter_val:
         st.markdown('<div id="section_songs"></div>', unsafe_allow_html=True)
         st.markdown("---")
-        st.markdown(f"## 🎶 2. 歌手【{st.session_state.chosen_singer}】的歌曲清單：")
         
-        songs_of_singer = df[df["歌手名稱"] == st.session_state.chosen_singer]
+        filter_label = "歌手" if st.session_state.filter_type == "singer" else "分類"
+        st.markdown(f"## 🎶 2. 【{st.session_state.chosen_filter_val}】({filter_label}) 的歌曲清單：")
         
-        for song in list(songs_of_singer["歌曲名稱"]):
-            label_song = f"🔥 正在播放：《 {song} 》" if st.session_state.chosen_song == song else f"🎵 《 {song} 》"
-            if st.button(label_song, key=f"btn_song_{song}", use_container_width=True):
+        if st.session_state.filter_type == "singer":
+            filtered_df = df[df["歌手名稱"] == st.session_state.chosen_filter_val]
+        else:
+            filtered_df = df[df["分類"] == st.session_state.chosen_filter_val]
+        
+        for idx, row in filtered_df.iterrows():
+            song = row["歌曲名稱"]
+            singer_name = row["歌手名稱"]
+            is_selected = st.session_state.chosen_song == song
+            
+            # 如果按分類看歌曲，顯示「歌曲名 (歌手)」會更清晰
+            display_title = f"《 {song} 》 - {singer_name}" if st.session_state.filter_type == "category" else f"《 {song} 》"
+            label_song = f"🔥 正在播放：{display_title}" if is_selected else f"🎵 {display_title}"
+            
+            if st.button(label_song, key=f"btn_song_{idx}_{song}", use_container_width=True):
                 st.session_state.chosen_song = song
-                st.session_state.scroll_target = "section_lyrics"  # 設定自動跳轉目標
+                st.session_state.chosen_singer_for_song = singer_name
+                st.session_state.scroll_target = "section_lyrics"
                 st.rerun()
 
     # 第三層：如果選了歌曲，設定錨點並顯示歌詞
-    if st.session_state.chosen_song and st.session_state.chosen_singer:
+    if st.session_state.chosen_song:
         st.markdown('<div id="section_lyrics"></div>', unsafe_allow_html=True)
         st.markdown("---")
-        song_info = df[(df["歌手名稱"] == st.session_state.chosen_singer) & (df["歌曲名稱"] == st.session_state.chosen_song)]
         
+        target_singer = getattr(st.session_state, "chosen_singer_for_song", st.session_state.chosen_filter_val)
+        song_info = df[(df["歌曲名稱"] == st.session_state.chosen_song) & (df["歌手名稱"] == target_singer)]
+        
+        if song_info.empty:
+            song_info = df[df["歌曲名稱"] == st.session_state.chosen_song]
+
         if not song_info.empty:
-            lyrics_text = "\n".join(song_info["歌詞"].astype(str).tolist())
-            song_cat = "/".join(song_info["分類"].astype(str).tolist())
+            actual_singer = song_info.iloc[0]["歌手名稱"]
+            lyrics_text = song_info.iloc[0]["歌詞"]
+            song_cat = song_info.iloc[0]["分類"]
             
-            st.markdown(f"# 🎤 {st.session_state.chosen_singer}")
+            st.markdown(f"# 🎤 {actual_singer}")
             st.markdown(f"# 《 {st.session_state.chosen_song} 》")
             if song_cat.strip():
                 st.caption(f"📁 歌曲分類：{song_cat}")
@@ -183,7 +226,7 @@ else:
             st.markdown("---")
             st.success("🎵 完整歌詞如下（請向下捲動閱讀）：")
             
-            for line in lyrics_text.split('\n'):
+            for line in str(lyrics_text).split('\n'):
                 if line.strip():
                     st.markdown(f"### {line}")
                 else:
