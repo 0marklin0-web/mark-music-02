@@ -112,8 +112,10 @@ if "管理員" in mode:
         if st.button("🔥 發佈最新歌單", key="publish_btn"):
             if paste_data.strip():
                 try:
-                    # 使用自動偵測分隔符號 (支援 Tab 或逗號)
-                    new_df = pd.read_csv(io.StringIO(paste_data), sep=None, engine='python')
+                    new_df = pd.read_csv(io.StringIO(paste_data), sep='\t')
+                    if len(new_df.columns) <= 1:
+                        new_df = pd.read_csv(io.StringIO(paste_data), sep=',')
+                    
                     new_df.dropna(how='all', inplace=True)
                     new_df.columns = [str(col).strip() for col in new_df.columns]
                     
@@ -126,7 +128,7 @@ if "管理員" in mode:
                         st.balloons()
                         st.rerun()
                     else:
-                        st.error("❌ 欄位不符！請確認包含：歌手名稱、歌曲名稱、歌詞、分類")
+                        st.error("❌ 欄位不符！")
                 except Exception as e:
                     st.error(f"❌ 解析失敗: {e}")
         st.table(df)
