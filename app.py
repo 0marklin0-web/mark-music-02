@@ -1,10 +1,3 @@
-這就為您修正管理員密碼欄位消失或無法順利輸入的問題！
-
-問題的主因通常是由於 Streamlit 在畫面重新整理（`st.rerun()`）時，若輸入框沒有設定固定的 `key`，在特定狀態切換下容易導致元件狀態跑掉或被略過。為 `st.text_input` 加上固定的 `key="admin_password"` 即可完美解決。
-
-以下是調整後的完整程式碼（其他所有功能、自動平滑滾動與排版皆完整保留）：
-
-```python
 import streamlit as st
 import pandas as pd
 import qrcode
@@ -212,5 +205,3 @@ else:
                 }}, 200);
             </script>
         """, height=0)
-
-```
