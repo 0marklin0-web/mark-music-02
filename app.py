@@ -77,4 +77,103 @@ if not os.path.exists(DATA_FILE):
             "我會披星戴月的想你\n我會奮不顧身地前進\n遠方煙火點燃你的心\n照亮我的一線生機"
         ]
     }
-    pd.DataFrame(default
+    pd.DataFrame(default_data).to_csv(DATA_FILE, index=False, encoding='utf-8')
+
+# 讀取實體檔案
+df = pd.read_csv(DATA_FILE, encoding='utf-8').fillna("").astype(str)
+
+# --- 3. 側邊欄：模式切換 ---
+st.sidebar.title("⚙️ 模式切換面板")
+mode = st.sidebar.radio("請選擇當前模式：", ["觀眾模式 📱 (粉絲看歌詞)", "管理員模式 🔑 (後台上傳)"])
+
+# --- 4. 管理員模式 🔑 ---
+if "管理員" in mode:
+    st.title("👨‍💼 管理員後台管理 (實體檔案全站同步版)")
+    st.markdown("---")
+    
+    password = st.text_input("🔑 請輸入管理員登入密碼：", type="password", key="admin_password")
+    
+    if password == "Chiho888":
+        st.success("🔓 認證成功！您現在可以更新歌單資料。")
+        st.markdown("### 📋 方式一：複製貼上更新（💯 實體寫入，手機 100% 絕對同步）")
+        paste_data = st.text_area("📥 請在此處貼上您從 Excel 複製的全部歌單內容：", height=200, key="paste_data_area")
+        
+        if st.button("🔥 發佈最新歌單", key="publish_btn"):
+            if paste_data.strip():
+                try:
+                    new_df = pd.read_csv(io.StringIO(paste_data), sep='\t')
+                    if len(new_df.columns) <= 1:
+                        new_df = pd.read_csv(io.StringIO(paste_data), sep=',')
+                    
+                    new_df.dropna(how='all', inplace=True)
+                    new_df.columns = [str(col).strip() for col in new_df.columns]
+                    
+                    required_cols = ["歌手名稱", "歌曲名稱", "歌詞", "分類"]
+                    if all(col in new_df.columns for col in required_cols):
+                        for col in required_cols:
+                            new_df[col] = new_df[col].fillna("").astype(str).str.strip()
+                        new_df[required_cols].to_csv(DATA_FILE, index=False, encoding='utf-8')
+                        st.success("🎉 歌單永久寫入雲端硬碟檔案！")
+                        st.balloons()
+                        st.rerun()
+                    else:
+                        st.error("❌ 欄位不符！")
+                except Exception as e:
+                    st.error(f"❌ 解析失敗: {e}")
+        st.table(df)
+    elif password != "":
+        st.error("🔒 密碼錯誤！")
+
+# --- 5. 觀眾模式 📱 ---
+else:
+    st.title("🎸 現場 Live 點歌與動態歌詞本")
+    st.caption("✨ 歡迎現場的朋友！點選下方大按鈕看歌詞！")
+    st.markdown("---")
+    
+    with st.expander("📱 點我展開現場專用 QR Code"):
+        current_url = "https://placeholder.url"
+        qr_component_code = """
+            <div id="qrcode-container" style="display:flex; flex-direction:column; align-items:center;">
+                <p style="font-size:14px; color:#555;">正在產生現場專用 QR Code...</p>
+            </div>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+            <script>
+                const currentUrl = window.parent.location.href;
+                const container = document.getElementById('qrcode-container');
+                container.innerHTML = '';
+                
+                const qrDiv = document.createElement('div');
+                container.appendChild(qrDiv);
+                
+                new QRCode(qrDiv, {
+                    text: currentUrl,
+                    width: 180,
+                    height: 180,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+                
+                const caption = document.createElement('p');
+                caption.style.cssText = "font-size: 14px; color: #31333F; margin-top: 10px; text-align: center;";
+                caption.innerText = "現場觀眾掃描此碼即可進入此點歌本";
+                container.appendChild(caption);
+            </script>
+        """
+        components.html(qr_component_code, height=240)
+
+    # 利用 Session State 記錄點選狀態與滾動目標
+    if "filter_type" not in st.session_state:
+        st.session_state.filter_type = "按歌手查找"
+    if "chosen_filter_val" not in st.session_state:
+        st.session_state.chosen_filter_val = None
+    if "chosen_song" not in st.session_state:
+        st.session_state.chosen_song = None
+    if "scroll_target" not in st.session_state:
+        st.session_state.scroll_target = None
+
+    # 第一層：1. 請選擇點歌方式 (歌手 vs 分類)
+    st.markdown("## 🎤 1. 請選擇瀏覽與點歌方式：")
+    
+    # 切換頁籤：按歌手 / 按分類
+    search_
