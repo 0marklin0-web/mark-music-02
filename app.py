@@ -5,7 +5,6 @@ from io import BytesIO
 import io
 import os
 import streamlit.components.v1 as components
-import pypinyin
 
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
@@ -208,8 +207,7 @@ else:
         st.session_state.chosen_song = None
 
     if current_mode == "singer":
-        # 🎤 歌手依筆劃排序
-        singers = sorted([s for s in df["歌手名稱"].unique() if s.strip()], key=lambda x: pypinyin.pinyin(x, style=pypinyin.STROKE))
+        singers = sorted([s for s in df["歌手名稱"].unique() if s.strip()])
         # 2 欄並列排版
         for i in range(0, len(singers), 2):
             cols = st.columns(2)
@@ -227,8 +225,7 @@ else:
                             st.rerun()
 
     else:
-        # 📁 分類依筆劃排序
-        categories = sorted([c for c in df["分類"].unique() if c.strip()], key=lambda x: pypinyin.pinyin(x, style=pypinyin.STROKE))
+        categories = sorted([c for c in df["分類"].unique() if c.strip()])
         # 2 欄並列排版
         for i in range(0, len(categories), 2):
             cols = st.columns(2)
@@ -261,15 +258,9 @@ else:
         st.markdown(f"## 🎶 2. 【{st.session_state.chosen_filter_val}】({filter_label}) 的歌曲清單：")
         
         if st.session_state.filter_type == "singer":
-            filtered_df = df[df["歌手名稱"] == st.session_state.chosen_filter_val].copy()
+            filtered_df = df[df["歌手名稱"] == st.session_state.chosen_filter_val]
         else:
-            filtered_df = df[df["分類"] == st.session_state.chosen_filter_val].copy()
-        
-        # 🎵 歌名依筆劃排序
-        filtered_df = filtered_df.sort_values(
-            by="歌曲名稱", 
-            key=lambda col: col.map(lambda x: pypinyin.pinyin(str(x), style=pypinyin.STROKE))
-        )
+            filtered_df = df[df["分類"] == st.session_state.chosen_filter_val]
         
         for idx, row in filtered_df.iterrows():
             song = row["歌曲名稱"]
@@ -302,4 +293,37 @@ else:
         if song_info.empty:
             song_info = df[df["歌曲名稱"] == st.session_state.chosen_song]
 
-        if not song_
+        if not song_info.empty:
+            actual_singer = song_info.iloc[0]["歌手名稱"]
+            lyrics_text = song_info.iloc[0]["歌詞"]
+            song_cat = song_info.iloc[0]["分類"]
+            
+            st.markdown(f"# 🎤 {actual_singer}")
+            st.markdown(f"# 《 {st.session_state.chosen_song} 》")
+            if song_cat.strip():
+                st.caption(f"📁 歌曲分類：{song_cat}")
+            
+            st.markdown("---")
+            st.success("🎵 完整歌詞如下（請向下捲動閱讀）：")
+            
+            for line in str(lyrics_text).split('\n'):
+                if line.strip():
+                    st.markdown(f"### {line}")
+                else:
+                    st.write("") # 空行
+            st.markdown("---")
+
+    # 執行自動平滑滾動的邏輯
+    if st.session_state.scroll_target:
+        target_id = st.session_state.scroll_target
+        st.session_state.scroll_target = None  # 清除狀態避免重複觸發
+        components.html(f"""
+            <script>
+                setTimeout(function() {{
+                    const el = window.parent.document.getElementById('{target_id}');
+                    if (el) {{
+                        el.scrollIntoView({{ behavior: 'smooth' }});
+                    }}
+                }}, 200);
+            </script>
+        """, height=0)
