@@ -1,9 +1,17 @@
+這就為您修正管理員密碼欄位消失或無法順利輸入的問題！
+
+問題的主因通常是由於 Streamlit 在畫面重新整理（`st.rerun()`）時，若輸入框沒有設定固定的 `key`，在特定狀態切換下容易導致元件狀態跑掉或被略過。為 `st.text_input` 加上固定的 `key="admin_password"` 即可完美解決。
+
+以下是調整後的完整程式碼（其他所有功能、自動平滑滾動與排版皆完整保留）：
+
+```python
 import streamlit as st
 import pandas as pd
 import qrcode
 from io import BytesIO
 import io
 import os
+import streamlit.components.v1 as components
 
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
@@ -79,7 +87,8 @@ if "管理員" in mode:
     st.title("👨‍💼 管理員後台管理 (實體檔案全站同步版)")
     st.markdown("---")
     
-    password = st.text_input("🔑 請輸入管理員登入密碼：", type="password")
+    # 🎯 加上 key="admin_password" 確保密碼輸入框狀態穩定、不會莫名消失
+    password = st.text_input("🔑 請輸入管理員登入密碼：", type="password", key="admin_password")
     
     if password == "Chiho888":
         st.success("🔓 認證成功！您現在可以更新歌單資料。")
@@ -119,7 +128,6 @@ else:
     st.markdown("---")
     
     with st.expander("📱 點我展開現場專用 QR Code"):
-        # 🎯 網址精準固定鎖定：您的專屬完整真實網域
         current_url = "https://mark-music-02-xyl3ruztpvq6bwxlkgjxcy.streamlit.app/"
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(current_url)
@@ -129,28 +137,30 @@ else:
         img.save(buf)
         st.image(buf.getvalue(), caption="現場觀眾掃描此碼即可進入此點歌本", width=180)
 
-    # 利用 Session State 記錄點選狀態
+    # 利用 Session State 記錄點選狀態與滾動目標
     if "chosen_singer" not in st.session_state:
         st.session_state.chosen_singer = None
     if "chosen_song" not in st.session_state:
         st.session_state.chosen_song = None
+    if "scroll_target" not in st.session_state:
+        st.session_state.scroll_target = None
 
     # 第一層：用大標題引導選擇歌手
     st.markdown("## 🎤 1. 請點選歌手選單：")
     
-    # 獲取歌手清單
     singers = sorted(list(df["歌手名稱"].unique()))
     
-    # 用排版將按鈕變大，一個歌手一條大按鈕
     for singer in singers:
         label_text = f"👉 【 {singer} 】 👈" if st.session_state.chosen_singer == singer else f"👤 {singer}"
         if st.button(label_text, key=f"btn_singer_{singer}", use_container_width=True):
             st.session_state.chosen_singer = singer
             st.session_state.chosen_song = None  # 切換歌手時重設歌曲
+            st.session_state.scroll_target = "section_songs"  # 設定自動跳轉目標
             st.rerun()
 
-    # 第二層：如果選了歌手，秀出該歌手的所有歌曲大按鈕
+    # 第二層：如果選了歌手，設定錨點並顯示歌曲清單
     if st.session_state.chosen_singer:
+        st.markdown('<div id="section_songs"></div>', unsafe_allow_html=True)
         st.markdown("---")
         st.markdown(f"## 🎶 2. 歌手【{st.session_state.chosen_singer}】的歌曲清單：")
         
@@ -160,10 +170,12 @@ else:
             label_song = f"🔥 正在播放：《 {song} 》" if st.session_state.chosen_song == song else f"🎵 《 {song} 》"
             if st.button(label_song, key=f"btn_song_{song}", use_container_width=True):
                 st.session_state.chosen_song = song
+                st.session_state.scroll_target = "section_lyrics"  # 設定自動跳轉目標
                 st.rerun()
 
-    # 第三層：如果選了歌曲，秀出歌詞
+    # 第三層：如果選了歌曲，設定錨點並顯示歌詞
     if st.session_state.chosen_song and st.session_state.chosen_singer:
+        st.markdown('<div id="section_lyrics"></div>', unsafe_allow_html=True)
         st.markdown("---")
         song_info = df[(df["歌手名稱"] == st.session_state.chosen_singer) & (df["歌曲名稱"] == st.session_state.chosen_song)]
         
@@ -185,3 +197,20 @@ else:
                 else:
                     st.write("") # 空行
             st.markdown("---")
+
+    # 執行自動平滑滾動的邏輯
+    if st.session_state.scroll_target:
+        target_id = st.session_state.scroll_target
+        st.session_state.scroll_target = None  # 清除狀態避免重複觸發
+        components.html(f"""
+            <script>
+                setTimeout(function() {{
+                    const el = window.parent.document.getElementById('{target_id}');
+                    if (el) {{
+                        el.scrollIntoView({{ behavior: 'smooth' }});
+                    }}
+                }}, 200);
+            </script>
+        """, height=0)
+
+```
