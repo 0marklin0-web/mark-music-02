@@ -29,26 +29,25 @@ st.markdown(
     
     /* 3. 大按鈕內部的字體大小維持舒適度 */
     div.stButton > button p {
-        font-size: 16px !important;
+        font-size: 20px !important;
         font-weight: bold !important;
     }
     
     /* 4. 🎯 放大「按歌手查找 / 按風格分類查找」的 radio 選項字體 */
     div.stRadio label p {
-        font-size: 18px !important;
+        font-size: 20px !important;
         font-weight: bold !important;
     }
     
     /* 5. 🎯 核心修正：將按鈕的高度與間距縮小，讓排版更緊湊、更好塞 */
     div.stButton > button {
-        min-height: 38px !important;    /* 高度縮小，減少佔用空間 */
-        height: 38px !important;
-        margin-top: 1px !important;     /* 上間距縮到最小 */
-        margin-bottom: 1px !important;  /* 下間距縮到最小 */
+        min-height: 45px !important;    /* 高度縮小，減少佔用空間 */
+        height: 45px !important;
+        margin-top: 2px !important;     /* 上間距縮到最小 */
+        margin-bottom: 2px !important;  /* 下間距縮到最小 */
         padding-top: 0px !important;
         padding-bottom: 0px !important;
-        border-radius: 6px !important;
-        width: 100% !important;
+        border-radius: 8px !important;
     }
     
     /* 6. 折疊按鈕字體 */
@@ -57,30 +56,15 @@ st.markdown(
         font-weight: 500 !important;
     }
     
-    /* 7. 🎯 返回按鈕專屬樣式（顏色稍微不一樣） */
-    button[aria-label*="返回"] {
-        background-color: #e2e8f0 !important;
-        color: #1e293b !important;
-        border: 1px solid #cbd5e1 !important;
-        font-weight: 600 !important;
-    }
-    button[aria-label*="返回"]:hover {
-        background-color: #cbd5e1 !important;
-        color: #0f172a !important;
-    }
-    
-    /* 8. 🎯 調整 2 欄間距與寬度，避免手機版橫向捲動並確保左右適中 */
+    /* 7. 🎯 強制手機版與電腦版皆維持 2 欄並列排版 */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
-        gap: 6px !important;
     }
     [data-testid="column"] {
         flex: 1 1 50% !important;
         width: 50% !important;
-        min-width: 0 !important;
-        max-width: 50% !important;
-        padding: 0 2px !important;
+        min-width: 50% !important;
     }
     </style>
     """,
@@ -128,10 +112,8 @@ if "管理員" in mode:
         if st.button("🔥 發佈最新歌單", key="publish_btn"):
             if paste_data.strip():
                 try:
-                    new_df = pd.read_csv(io.StringIO(paste_data), sep='\t')
-                    if len(new_df.columns) <= 1:
-                        new_df = pd.read_csv(io.StringIO(paste_data), sep=',')
-                    
+                    # 使用自動偵測分隔符號 (支援 Tab 或逗號)
+                    new_df = pd.read_csv(io.StringIO(paste_data), sep=None, engine='python')
                     new_df.dropna(how='all', inplace=True)
                     new_df.columns = [str(col).strip() for col in new_df.columns]
                     
@@ -144,10 +126,15 @@ if "管理員" in mode:
                         st.balloons()
                         st.rerun()
                     else:
-                        st.error("❌ 欄位不符！")
+                        st.error("❌ 欄位不符！請確認包含：歌手名稱、歌曲名稱、歌詞、分類")
                 except Exception as e:
                     st.error(f"❌ 解析失敗: {e}")
+        
+        # 📌 恢復並優化最下方的目前歌單預覽表格
+        st.markdown("---")
+        st.markdown("### 📊 目前雲端歌單總覽")
         st.table(df)
+        
     elif password != "":
         st.error("🔒 密碼錯誤！")
 
@@ -157,6 +144,7 @@ else:
     st.caption("✨ 歡迎現場的朋友！點選下方大按鈕看歌詞！")
     st.markdown("---")
     
+    # 預設展開 QR Code (expanded=True)
     with st.expander("📱 點我展開現場專用 QR Code", expanded=True):
         qr_component_code = """
             <div id="qrcode-container" style="display:flex; flex-direction:column; align-items:center;">
@@ -232,13 +220,11 @@ else:
                 if i + j < len(singers):
                     singer = singers[i + j]
                     with cols[j]:
-                        st.markdown(f'<div id="singer_{singer}"></div>', unsafe_allow_html=True)
                         is_active = (st.session_state.filter_type == "singer") and (st.session_state.chosen_filter_val == singer)
                         label_text = f"👉 【 {singer} 】 👈" if is_active else f"👤 {singer}"
                         if st.button(label_text, key=f"btn_singer_{singer}", use_container_width=True):
                             st.session_state.filter_type = "singer"
                             st.session_state.chosen_filter_val = singer
-                            st.session_state.last_clicked_singer = singer
                             st.session_state.chosen_song = None
                             st.session_state.scroll_target = "section_songs"
                             st.rerun()
@@ -252,13 +238,11 @@ else:
                 if i + j < len(categories):
                     cat = categories[i + j]
                     with cols[j]:
-                        st.markdown(f'<div id="cat_{cat}"></div>', unsafe_allow_html=True)
                         is_active = (st.session_state.filter_type == "category") and (st.session_state.chosen_filter_val == cat)
                         label_text = f"👉 【 {cat} 】 👈" if is_active else f"📁 {cat}"
                         if st.button(label_text, key=f"btn_cat_{cat}", use_container_width=True):
                             st.session_state.filter_type = "category"
                             st.session_state.chosen_filter_val = cat
-                            st.session_state.last_clicked_category = cat
                             st.session_state.chosen_song = None
                             st.session_state.scroll_target = "section_songs"
                             st.rerun()
@@ -268,11 +252,11 @@ else:
         st.markdown('<div id="section_songs"></div>', unsafe_allow_html=True)
         st.markdown("---")
         
-        back_target = f"singer_{st.session_state.get('last_clicked_singer', '')}" if st.session_state.filter_type == "singer" else f"cat_{st.session_state.get('last_clicked_category', '')}"
-        if st.button("⬅️ 返回上一頁（選擇歌手/分類）", key="back_to_top_btn", use_container_width=True):
+        # ⬅️ 返回上一頁按鈕（使用 type="primary" 呈現主題色彩區別）
+        if st.button("⬅️ 返回上一頁（選擇歌手/分類）", key="back_to_top_btn", use_container_width=True, type="primary"):
             st.session_state.chosen_filter_val = None
             st.session_state.chosen_song = None
-            st.session_state.scroll_target = back_target if st.session_state.get('last_clicked_singer') or st.session_state.get('last_clicked_category') else "section_top"
+            st.session_state.scroll_target = "section_top"
             st.rerun()
 
         filter_label = "歌手" if st.session_state.filter_type == "singer" else "分類"
@@ -291,11 +275,9 @@ else:
             display_title = f"《 {song} 》 - {singer_name}" if st.session_state.filter_type == "category" else f"《 {song} 》"
             label_song = f"🔥 正在播放：{display_title}" if is_selected else f"🎵 {display_title}"
             
-            st.markdown(f'<div id="song_{idx}_{song}"></div>', unsafe_allow_html=True)
             if st.button(label_song, key=f"btn_song_{idx}_{song}", use_container_width=True):
                 st.session_state.chosen_song = song
                 st.session_state.chosen_singer_for_song = singer_name
-                st.session_state.last_clicked_song_key = f"song_{idx}_{song}"
                 st.session_state.scroll_target = "section_lyrics"
                 st.rerun()
 
@@ -304,10 +286,10 @@ else:
         st.markdown('<div id="section_lyrics"></div>', unsafe_allow_html=True)
         st.markdown("---")
         
-        if st.button("⬅️ 返回上一頁（歌曲清單）", key="back_to_songs_btn", use_container_width=True):
-            target_song_key = st.session_state.get('last_clicked_song_key', 'section_songs')
+        # ⬅️ 返回上一頁按鈕（使用 type="primary" 呈現主題色彩區別）
+        if st.button("⬅️ 返回上一頁（歌曲清單）", key="back_to_songs_btn", use_container_width=True, type="primary"):
             st.session_state.chosen_song = None
-            st.session_state.scroll_target = target_song_key
+            st.session_state.scroll_target = "section_songs"
             st.rerun()
         
         target_singer = getattr(st.session_state, "chosen_singer_for_song", st.session_state.chosen_filter_val)
