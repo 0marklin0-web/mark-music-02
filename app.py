@@ -1,8 +1,28 @@
 import io
 import os
+import unicodedata
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
+
+
+# 輔助函式：取得字串首字的 Unicode 名稱來依筆劃/CJK順序排序
+def stroke_key(text):
+    text_str = str(text).strip()
+    if not text_str:
+        return (3, "")
+    char = text_str[0]
+    try:
+        name = unicodedata.name(char)
+        if "CJK UNIFIED IDEOGRAPH" in name:
+            # 漢字依 Unicode Code Point 順序（大致符合筆劃/部首字典序）
+            return (1, ord(char), text_str)
+        else:
+            # 非漢字（英數符號等）排在後面
+            return (2, text_str.lower(), text_str)
+    except ValueError:
+        return (3, text_str)
+
 
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
@@ -91,14 +111,10 @@ if not os.path.exists(DATA_FILE):
             "獨立樂團",
         ],
         "歌詞": [
-            "故事的小黃花 從出生那年就飄著\n童年的蕩秋千"
-            " 隨記憶一直晃到現在\n吹著前奏望著天空 我想起花瓣試著掉落",
-            "親愛的 愛上你 從那天起\n甜蜜的很輕易\n親愛的"
-            " 別任性 你的眼睛\n在說我願意",
-            "突然好想你 你會在哪裡\n過得快樂或委屈\n突然好想你"
-            " 突然鋒利的回憶\n突然模糊的眼睛",
-            "你總是要我乖 張開雙手帶到未來\n如果你善解人意"
-            " 怎麼不明白\n我們的愛太無奈 總是承載著太多期盼",
+            "故事的小黃花 從出生那年就飄著\n童年的蕩秋千 隨記憶一直晃到現在\n吹著前奏望著天空 我想起花瓣試著掉落",
+            "親愛的 愛上你 從那天起\n甜蜜的很輕易\n親愛的 別任性 你的眼睛\n在說我願意",
+            "突然好想你 你會在哪裡\n過得快樂或委屈\n突然好想你 突然鋒利的回憶\n突然模糊的眼睛",
+            "你總是要我乖 張開雙手帶到未來\n如果你善解人意 怎麼不明白\n我們的愛太無奈 總是承載著太多期盼",
             "我會披星戴月的想你\n我會奮不顧身地前進\n遠方煙火點燃你的心\n照亮我的一線生機",
         ],
     }
@@ -251,7 +267,7 @@ else:
 
     if current_mode == "singer":
         singers = sorted(
-            [s for s in df["歌手名稱"].unique() if s.strip()]
+            [s for s in df["歌手名稱"].unique() if s.strip()], key=stroke_key
         )
         # 2 欄並列排版
         for i in range(0, len(singers), 2):
@@ -282,7 +298,9 @@ else:
                             st.rerun()
 
     else:
-        categories = sorted([c for c in df["分類"].unique() if c.strip()])
+        categories = sorted(
+            [c for c in df["分類"].unique() if c.strip()], key=stroke_key
+        )
         # 2 欄並列排版
         for i in range(0, len(categories), 2):
             cols = st.columns(2)
@@ -340,11 +358,17 @@ else:
         if st.session_state.filter_type == "singer":
             filtered_df = df[
                 df["歌手名稱"] == st.session_state.chosen_filter_val
-            ]
+            ].copy()
         else:
             filtered_df = df[
                 df["分類"] == st.session_state.chosen_filter_val
-            ]
+            ].copy()
+
+        # 依歌曲名稱順序按筆劃排序
+        filtered_df["sort_key"] = filtered_df["歌曲名稱"].apply(stroke_key)
+        filtered_df = filtered_df.sort_values("sort_key").drop(
+            columns=["sort_key"]
+        )
 
         for idx, row in filtered_df.iterrows():
             song = row["歌曲名稱"]
