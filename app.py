@@ -217,7 +217,7 @@ else:
         st.session_state.chosen_song = None
 
     if current_mode == "singer":
-        # 🎯 已調整為中文筆劃排序
+        # 🎯 歌手名稱依筆劃排序
         singers = sorted([s for s in df["歌手名稱"].unique() if s.strip()], key=locale.strxfrm)
         # 2 欄並列排版
         for i in range(0, len(singers), 2):
@@ -236,7 +236,7 @@ else:
                             st.rerun()
 
     else:
-        # 🎯 已調整為中文筆劃排序
+        # 🎯 分類依筆劃排序
         categories = sorted([c for c in df["分類"].unique() if c.strip()], key=locale.strxfrm)
         # 2 欄並列排版
         for i in range(0, len(categories), 2):
@@ -273,6 +273,9 @@ else:
             filtered_df = df[df["歌手名稱"] == st.session_state.chosen_filter_val]
         else:
             filtered_df = df[df["分類"] == st.session_state.chosen_filter_val]
+        
+        # 🎯 歌曲名稱依筆劃排序
+        filtered_df = filtered_df.sort_values(by="歌曲名稱", key=lambda col: col.map(locale.strxfrm))
         
         for idx, row in filtered_df.iterrows():
             song = row["歌曲名稱"]
@@ -336,6 +339,4 @@ else:
                     if (el) {{
                         el.scrollIntoView({{ behavior: 'smooth' }});
                     }}
-                }}, 200);
-            </script>
-        """, height=0)
+                }}, 20
