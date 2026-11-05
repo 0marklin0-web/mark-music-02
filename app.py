@@ -1,27 +1,23 @@
 import io
+import locale
 import os
-import unicodedata
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-
-# 輔助函式：取得字串首字的 Unicode 名稱來依筆劃/CJK順序排序
-def stroke_key(text):
-    text_str = str(text).strip()
-    if not text_str:
-        return (3, "")
-    char = text_str[0]
+# 設定繁體中文語系以支援精確的中文筆劃與字典排序
+try:
+    locale.setlocale(locale.LC_COLLATE, "zh_TW.UTF-8")
+except Exception:
     try:
-        name = unicodedata.name(char)
-        if "CJK UNIFIED IDEOGRAPH" in name:
-            # 漢字依 Unicode Code Point 順序（大致符合筆劃/部首字典序）
-            return (1, ord(char), text_str)
-        else:
-            # 非漢字（英數符號等）排在後面
-            return (2, text_str.lower(), text_str)
-    except ValueError:
-        return (3, text_str)
+        locale.setlocale(locale.LC_COLLATE, "zh_TW")
+    except Exception:
+        pass
+
+
+def stroke_sort_key(item):
+    """回傳符合繁體中文筆劃排序規則的排序鍵"""
+    return locale.strxfrm(str(item).strip())
 
 
 # --- 1. 頁面基本設定 ---
@@ -267,7 +263,8 @@ else:
 
     if current_mode == "singer":
         singers = sorted(
-            [s for s in df["歌手名稱"].unique() if s.strip()], key=stroke_key
+            [s for s in df["歌手名稱"].unique() if s.strip()],
+            key=stroke_sort_key,
         )
         # 2 欄並列排版
         for i in range(0, len(singers), 2):
@@ -299,7 +296,7 @@ else:
 
     else:
         categories = sorted(
-            [c for c in df["分類"].unique() if c.strip()], key=stroke_key
+            [c for c in df["分類"].unique() if c.strip()], key=stroke_sort_key
         )
         # 2 欄並列排版
         for i in range(0, len(categories), 2):
@@ -364,10 +361,12 @@ else:
                 df["分類"] == st.session_state.chosen_filter_val
             ].copy()
 
-        # 依歌曲名稱順序按筆劃排序
-        filtered_df["sort_key"] = filtered_df["歌曲名稱"].apply(stroke_key)
-        filtered_df = filtered_df.sort_values("sort_key").drop(
-            columns=["sort_key"]
+        # 歌曲名稱依筆劃順序排序
+        filtered_df["_stroke_key"] = filtered_df["歌曲名稱"].apply(
+            stroke_sort_key
+        )
+        filtered_df = filtered_df.sort_values("_stroke_key").drop(
+            columns=["_stroke_key"]
         )
 
         for idx, row in filtered_df.iterrows():
