@@ -4,7 +4,17 @@ import qrcode
 from io import BytesIO
 import io
 import os
+import locale
 import streamlit.components.v1 as components
+
+# --- 0. 設定中文筆劃排序環境 ---
+try:
+    locale.setlocale(locale.LC_COLLATE, 'zh_TW.UTF-8')
+except:
+    try:
+        locale.setlocale(locale.LC_COLLATE, 'zh_TW')
+    except:
+        pass
 
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
@@ -207,7 +217,8 @@ else:
         st.session_state.chosen_song = None
 
     if current_mode == "singer":
-        singers = sorted([s for s in df["歌手名稱"].unique() if s.strip()])
+        # 🎯 已調整為中文筆劃排序
+        singers = sorted([s for s in df["歌手名稱"].unique() if s.strip()], key=locale.strxfrm)
         # 2 欄並列排版
         for i in range(0, len(singers), 2):
             cols = st.columns(2)
@@ -225,7 +236,8 @@ else:
                             st.rerun()
 
     else:
-        categories = sorted([c for c in df["分類"].unique() if c.strip()])
+        # 🎯 已調整為中文筆劃排序
+        categories = sorted([c for c in df["分類"].unique() if c.strip()], key=locale.strxfrm)
         # 2 欄並列排版
         for i in range(0, len(categories), 2):
             cols = st.columns(2)
