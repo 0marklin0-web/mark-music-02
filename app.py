@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
+from pypinyin import Style, lazy_pinyin
 
 # 設定繁體中文語系以支援精確的中文筆劃與字典排序
 try:
@@ -19,22 +20,32 @@ def stroke_sort_key(item):
     """
     排序規則：
     1. 英文/數字 (ASCII) 優先，按字典順序 (不分大小寫) 排序
-    2. 中文/非 ASCII 其次，依繁體中文筆劃/字典排序
+    2. 中文/非 ASCII 其次，精確計算首字繁體中文筆劃數排序：
+       - 筆劃少者在前 (例如：大[3劃]、王[4劃] 會排在前列)
+       - 筆劃相同時，依字串本身做次要排序
     """
     text = str(item).strip()
     if not text:
-        return (2, "")
-    
+        return (2, 0, "")
+
     first_char = text[0]
-    
-    # 判斷第一個字元是否為半形英文/數字
+
+    # 1. 判斷第一個字元是否為半形英文/數字
     if ord(first_char) < 128 and (first_char.isalnum() or first_char in " .-_"):
-        return (0, text.lower())
-    else:
-        try:
-            return (1, locale.strxfrm(text))
-        except Exception:
-            return (1, text)
+        return (0, 0, text.lower())
+
+    # 2. 中文/非 ASCII 字元：使用 pypinyin 計算筆劃數
+    try:
+        strokes = lazy_pinyin(first_char, style=Style.STROKE)
+        if strokes and strokes[0].isdigit():
+            stroke_count = int(strokes[0])
+        else:
+            stroke_count = 999  # 無法解析筆劃的字元排在較後方
+    except Exception:
+        stroke_count = 999
+
+    # 回傳鍵值：(類別權重, 筆劃數, 原字串)
+    return (1, stroke_count, text)
 
 
 # --- 1. 頁面基本設定 ---
