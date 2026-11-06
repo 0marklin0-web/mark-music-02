@@ -14,53 +14,40 @@ except Exception:
     except Exception:
         pass
 
-# 常用繁體中文首字筆劃數映射表 (1~10劃)
-STROKE_MAP = {
-    1: "一乙",
-    2: "丁七乃九了二人十卜又八刀力",
-    3: "口土士夕大女子寸小山川己已巳弓才門千叉丸凡凡干工",
-    4: "不中丰丹之允予介公六兮文斗斤方日月木水火犬王幻尹",
-    5: "丘丙世由平本末半卡去可古右召司吃各合吉同名后吐向",
-    6: "朱牟百竹米羊羽老考同伍件任份企休伏伐伯伶余佩佳",
-    7: "余佛作你伯冷何李吳宋杜沈汪阮汪江池汶",
-    8: "周卓林柯柴柳徐孫孟汪汪沙",
-    9: "周姜姚施柯柳洪汪",
-    10: "高唐夏孫姬翁徐",
-}
-
-
-def get_stroke_count(char):
-    """取得字元的估算筆劃數"""
-    for count, chars in STROKE_MAP.items():
-        if char in chars:
-            return count
-    # 若不在常用字集中，依 Unicode code point 做為備用基礎排序
-    return 100 + ord(char) % 100
-
 
 def stroke_sort_key(item):
-    """
-    排序規則：
-    1. 英文/數字 (ASCII) 優先，按字典順序 (不分大小寫) 排序
-    2. 中文/非 ASCII 其次，計算首字繁體中文筆劃數排序：
-       - 筆劃少者在前 (例如：大[3劃]、王[4劃] 會排在前列)
-       - 筆劃相同時，依字串本身做次要排序
-    """
-    text = str(item).strip()
-    if not text:
+    """回傳排序鍵：英文在前，其次依第一個字繁體中文筆劃順序排序"""
+    s = str(item).strip()
+    if not s:
         return (2, 0, "")
 
-    first_char = text[0]
+    first_char = s[0]
 
-    # 1. 判斷第一個字元是否為半形英文/數字
-    if ord(first_char) < 128 and (first_char.isalnum() or first_char in " .-_"):
-        return (0, 0, text.lower())
+    # 1. 英文 / ASCII 字母排在最前面
+    if first_char.isascii() and first_char.isalpha():
+        return (0, 0, s.lower(), s)
 
-    # 2. 中文/非 ASCII 字元
-    stroke_count = get_stroke_count(first_char)
+    # 常用字筆劃字典（針對名稱第一個字進行極速筆劃對應）
+    stroke_dict = {
+        "一": 1, "乙": 1,
+        "丁": 2, "七": 2, "乃": 2, "九": 2, "了": 2, "二": 2, "人": 2, "入": 2, "八": 2,
+        "三": 3, "下": 3, "丈": 3, "上": 3, "丸": 3, "凡": 3, "久": 3, "也": 3, "大": 3, "女": 3, "子": 3, "小": 3, "山": 3, "川": 3, "己": 3, "干": 3, "弓": 3,
+        "王": 4, "五": 4, "中": 4, "公": 4, "六": 4, "切": 4, "天": 4, "太": 4, "少": 4, "巴": 4, "方": 4, "日": 4, "月": 4, "木": 4, "水": 4, "火": 4, "牛": 4, "心": 4, "文": 4,
+        "古": 5, "出": 5, "包": 5, "半": 5, "平": 5, "正": 5, "母": 5, "民": 5, "生": 5, "白": 5, "目": 5, "立": 5, "示": 5, "石": 5, "禾": 5, "四": 5,
+        "光": 6, "再": 6, "同": 6, "名": 6, "后": 6, "好": 6, "字": 6, "安": 6, "朱": 6, "江": 6, "百": 6, "竹": 6, "米": 6, "老": 6, "西": 6,
+        "告": 7, "宋": 7, "李": 7, "吳": 7, "林": 7, "何": 7, "余": 7, "沈": 7, "汪": 7, "初": 7, "吹": 7, "我": 7,
+        "周": 8, "披": 8, "雨": 8, "夜": 8, "突": 9, "倒": 10, "國": 11, "晴": 12, "經典": 13, "蔡": 14, "樂": 15, "獨": 16, "隱": 17
+    }
 
-    # 回傳鍵值：(類別權重, 筆劃數, 原字串)
-    return (1, stroke_count, text)
+    # 取得第一個字的筆劃數，若未在預設集中則備用比對
+    stroke = stroke_dict.get(first_char, 99)
+
+    try:
+        collate_key = locale.strxfrm(s)
+    except Exception:
+        collate_key = s
+
+    return (1, stroke, collate_key)
 
 
 # --- 1. 頁面基本設定 ---
@@ -98,10 +85,10 @@ st.markdown(
     
     /* 5. 🎯 核心修正：將按鈕的高度與間距縮小，讓排版更緊湊、更好塞 */
     div.stButton > button {
-        min-height: 45px !important;    /* 高度縮小，減少佔用空間 */
+        min-height: 45px !important;    /*高度縮小，減少佔用空間 */
         height: 45px !important;
-        margin-top: 2px !important;     /* 上間距縮到最小 */
-        margin-bottom: 2px !important;  /* 下間距縮到最小 */
+        margin-top: 2px !important;     /*上間距縮到最小 */
+        margin-bottom: 2px !important;  /*下間距縮到最小 */
         padding-top: 0px !important;
         padding-bottom: 0px !important;
         border-radius: 8px !important;
@@ -210,15 +197,12 @@ if "管理員" in mode:
                     if all(col in new_df.columns for col in required_cols):
                         for col in required_cols:
                             new_df[col] = (
-                                new_df[col]
-                                .fillna("")
-                                .astype(str)
-                                .str.strip()
+                                new_df[col].fillna("").astype(str).str.strip()
                             )
                         new_df[required_cols].to_csv(
                             DATA_FILE, index=False, encoding="utf-8"
                         )
-                        st.success("🎉 歌單永久寫入雲端硬碟檔案！")
+                        st.success("🎉 歌單寫入硬碟檔案！")
                         st.balloons()
                         st.rerun()
                     else:
@@ -332,9 +316,7 @@ else:
                             st.session_state.filter_type = "singer"
                             st.session_state.chosen_filter_val = singer
                             st.session_state.chosen_song = None
-                            st.session_state.scroll_target = (
-                                "section_songs"
-                            )
+                            st.session_state.scroll_target = "section_songs"
                             st.rerun()
 
     else:
@@ -364,16 +346,12 @@ else:
                             st.session_state.filter_type = "category"
                             st.session_state.chosen_filter_val = cat
                             st.session_state.chosen_song = None
-                            st.session_state.scroll_target = (
-                                "section_songs"
-                            )
+                            st.session_state.scroll_target = "section_songs"
                             st.rerun()
 
     # 第二層：如果選了歌手或分類，顯示對應的歌曲清單
     if st.session_state.chosen_filter_val:
-        st.markdown(
-            '<div id="section_songs"></div>', unsafe_allow_html=True
-        )
+        st.markdown('<div id="section_songs"></div>', unsafe_allow_html=True)
         st.markdown("---")
 
         # ⬅️ 返回上一頁按鈕
@@ -404,7 +382,7 @@ else:
                 df["分類"] == st.session_state.chosen_filter_val
             ].copy()
 
-        # 歌曲名稱依「英文優先、中文筆劃」順序排序
+        # 歌曲名稱依筆劃順序排序
         filtered_df["_stroke_key"] = filtered_df["歌曲名稱"].apply(
             stroke_sort_key
         )
@@ -440,9 +418,7 @@ else:
 
     # 第三層：如果選了歌曲，設定錨點並顯示歌詞
     if st.session_state.chosen_song:
-        st.markdown(
-            '<div id="section_lyrics"></div>', unsafe_allow_html=True
-        )
+        st.markdown('<div id="section_lyrics"></div>', unsafe_allow_html=True)
         st.markdown("---")
 
         # ⬅️ 返回上一頁按鈕
