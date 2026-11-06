@@ -16,8 +16,25 @@ except Exception:
 
 
 def stroke_sort_key(item):
-    """回傳符合繁體中文筆劃排序規則的排序鍵"""
-    return locale.strxfrm(str(item).strip())
+    """
+    排序規則：
+    1. 英文/數字 (ASCII) 優先，按字典順序 (不分大小寫) 排序
+    2. 中文/非 ASCII 其次，依繁體中文筆劃/字典排序
+    """
+    text = str(item).strip()
+    if not text:
+        return (2, "")
+    
+    first_char = text[0]
+    
+    # 判斷第一個字元是否為半形英文/數字
+    if ord(first_char) < 128 and (first_char.isalnum() or first_char in " .-_"):
+        return (0, text.lower())
+    else:
+        try:
+            return (1, locale.strxfrm(text))
+        except Exception:
+            return (1, text)
 
 
 # --- 1. 頁面基本設定 ---
@@ -55,10 +72,10 @@ st.markdown(
     
     /* 5. 🎯 核心修正：將按鈕的高度與間距縮小，讓排版更緊湊、更好塞 */
     div.stButton > button {
-        min-height: 45px !important;    /*高度縮小，減少佔用空間 */
+        min-height: 45px !important;    /* 高度縮小，減少佔用空間 */
         height: 45px !important;
-        margin-top: 2px !important;     /*上間距縮到最小 */
-        margin-bottom: 2px !important;  /*下間距縮到最小 */
+        margin-top: 2px !important;     /* 上間距縮到最小 */
+        margin-bottom: 2px !important;  /* 下間距縮到最小 */
         padding-top: 0px !important;
         padding-bottom: 0px !important;
         border-radius: 8px !important;
@@ -333,7 +350,7 @@ else:
         )
         st.markdown("---")
 
-        # ⬅️ 返回上一頁按鈕（使用 type="primary" 呈現主題色彩區別）
+        # ⬅️ 返回上一頁按鈕
         if st.button(
             "⬅️ 返回上一頁（選擇歌手/分類）",
             key="back_to_top_btn",
@@ -361,7 +378,7 @@ else:
                 df["分類"] == st.session_state.chosen_filter_val
             ].copy()
 
-        # 歌曲名稱依筆劃順序排序
+        # 歌曲名稱依「英文優先、中文筆劃」順序排序
         filtered_df["_stroke_key"] = filtered_df["歌曲名稱"].apply(
             stroke_sort_key
         )
@@ -402,7 +419,7 @@ else:
         )
         st.markdown("---")
 
-        # ⬅️ 返回上一頁按鈕（使用 type="primary" 呈現主題色彩區別）
+        # ⬅️ 返回上一頁按鈕
         if st.button(
             "⬅️ 返回上一頁（歌曲清單）",
             key="back_to_songs_btn",
@@ -460,6 +477,6 @@ else:
                     }}
                 }}, 200);
             </script>
-        """,
+            """,
             height=0,
         )
