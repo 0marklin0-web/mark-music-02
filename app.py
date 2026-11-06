@@ -4,7 +4,6 @@ import os
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
-from pypinyin import Style, lazy_pinyin
 
 # 設定繁體中文語系以支援精確的中文筆劃與字典排序
 try:
@@ -15,12 +14,35 @@ except Exception:
     except Exception:
         pass
 
+# 常用繁體中文首字筆劃數映射表 (1~10劃)
+STROKE_MAP = {
+    1: "一乙",
+    2: "丁七乃九了二人十卜又八刀力",
+    3: "口土士夕大女子寸小山川己已巳弓才門千叉丸凡凡干工",
+    4: "不中丰丹之允予介公六兮文斗斤方日月木水火犬王幻尹",
+    5: "丘丙世由平本末半卡去可古右召司吃各合吉同名后吐向",
+    6: "朱牟百竹米羊羽老考同伍件任份企休伏伐伯伶余佩佳",
+    7: "余佛作你伯冷何李吳宋杜沈汪阮汪江池汶",
+    8: "周卓林柯柴柳徐孫孟汪汪沙",
+    9: "周姜姚施柯柳洪汪",
+    10: "高唐夏孫姬翁徐",
+}
+
+
+def get_stroke_count(char):
+    """取得字元的估算筆劃數"""
+    for count, chars in STROKE_MAP.items():
+        if char in chars:
+            return count
+    # 若不在常用字集中，依 Unicode code point 做為備用基礎排序
+    return 100 + ord(char) % 100
+
 
 def stroke_sort_key(item):
     """
     排序規則：
     1. 英文/數字 (ASCII) 優先，按字典順序 (不分大小寫) 排序
-    2. 中文/非 ASCII 其次，精確計算首字繁體中文筆劃數排序：
+    2. 中文/非 ASCII 其次，計算首字繁體中文筆劃數排序：
        - 筆劃少者在前 (例如：大[3劃]、王[4劃] 會排在前列)
        - 筆劃相同時，依字串本身做次要排序
     """
@@ -34,15 +56,8 @@ def stroke_sort_key(item):
     if ord(first_char) < 128 and (first_char.isalnum() or first_char in " .-_"):
         return (0, 0, text.lower())
 
-    # 2. 中文/非 ASCII 字元：使用 pypinyin 計算筆劃數
-    try:
-        strokes = lazy_pinyin(first_char, style=Style.STROKE)
-        if strokes and strokes[0].isdigit():
-            stroke_count = int(strokes[0])
-        else:
-            stroke_count = 999  # 無法解析筆劃的字元排在較後方
-    except Exception:
-        stroke_count = 999
+    # 2. 中文/非 ASCII 字元
+    stroke_count = get_stroke_count(first_char)
 
     # 回傳鍵值：(類別權重, 筆劃數, 原字串)
     return (1, stroke_count, text)
