@@ -36,7 +36,7 @@ def stroke_sort_key(item):
         "古": 5, "出": 5, "包": 5, "半": 5, "平": 5, "正": 5, "母": 5, "民": 5, "生": 5, "白": 5, "目": 5, "立": 5, "示": 5, "石": 5, "禾": 5, "四": 5,
         "光": 6, "再": 6, "同": 6, "名": 6, "后": 6, "好": 6, "字": 6, "安": 6, "朱": 6, "江": 6, "百": 6, "竹": 6, "米": 6, "老": 6, "西": 6,
         "告": 7, "宋": 7, "李": 7, "吳": 7, "林": 7, "何": 7, "余": 7, "沈": 7, "汪": 7, "初": 7, "吹": 7, "我": 7,
-        "周": 8, "披": 8, "雨": 8, "夜": 8, "突": 9, "倒": 10, "國": 11, "晴": 12, "經典": 13, "蔡": 14, "樂": 15, "獨": 16, "隱": 17
+        "周": 8, "披": 8, "雨": 8, "夜": 8, "突": 9, "倒": 10, "國": 11, "晴": 12, "經": 13, "蔡": 14, "樂": 15, "獨": 16, "隱": 17
     }
 
     # 取得第一個字的筆劃數，若未在預設集中則備用比對
@@ -53,7 +53,23 @@ def stroke_sort_key(item):
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# 🎯 核心樣式修正：將大按鈕、radio選項字體放大，並將外距極致縮小讓排版更緊湊，同時隱藏右上角的 GitHub 原始碼連結
+# --- 管理員密碼檔案寫入與讀取核心 ---
+PWD_FILE = "admin_password.txt"
+if not os.path.exists(PWD_FILE):
+    with open(PWD_FILE, "w", encoding="utf-8") as f:
+        f.write("123456")
+
+def get_admin_password():
+    if os.path.exists(PWD_FILE):
+        with open(PWD_FILE, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    return "123456"
+
+def set_admin_password(new_pwd):
+    with open(PWD_FILE, "w", encoding="utf-8") as f:
+        f.write(str(new_pwd).strip())
+
+# 🎯 核心樣式修正：打造活潑視覺風格，優化按鈕互動與行動端表現
 st.markdown(
     """
     <style>
@@ -62,42 +78,94 @@ st.markdown(
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* 2. 將選單的導引大標題微調 */
+    /* 背景視覺漸層與主題優化 */
+    .stApp {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+    
+    /* 2. 選單大標題與字體微調 */
+    h1 {
+        font-weight: 800 !important;
+        color: #0f172a !important;
+    }
+
     h2 {
         font-size: 24px !important;
-        font-weight: bold !important;
-        color: inherit !important;
-        margin-top: 10px !important;
+        font-weight: 800 !important;
+        color: #1e293b !important;
+        margin-top: 12px !important;
         margin-bottom: 8px !important;
     }
     
-    /* 3. 大按鈕內部的字體大小維持舒適度 */
+    /* 3. 按鈕內部文字樣式 */
     div.stButton > button p {
-        font-size: 20px !important;
-        font-weight: bold !important;
+        font-size: 19px !important;
+        font-weight: 700 !important;
     }
     
-    /* 4. 🎯 放大「按歌手查找 / 按風格分類查找」的 radio 選項字體 */
+    /* 4. 🎯 Radio 選項容器與字體活潑化 */
     div.stRadio label p {
         font-size: 20px !important;
-        font-weight: bold !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
     }
     
-    /* 5. 🎯 核心修正：將按鈕的高度與間距縮小，讓排版更緊湊、更好塞 */
+    div.stRadio > div {
+        background-color: #ffffff;
+        padding: 8px 14px;
+        border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    
+    /* 5. 🎯 核心按鈕動態與緊湊化修正 */
     div.stButton > button {
-        min-height: 45px !important;    /*高度縮小，減少佔用空間 */
-        height: 45px !important;
-        margin-top: 2px !important;     /*上間距縮到最小 */
-        margin-bottom: 2px !important;  /*下間距縮到最小 */
+        min-height: 48px !important;
+        height: 48px !important;
+        margin-top: 2px !important;
+        margin-bottom: 2px !important;
         padding-top: 0px !important;
         padding-bottom: 0px !important;
-        border-radius: 8px !important;
+        border-radius: 12px !important;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+        color: #1e293b !important;
+        border: 1.5px solid #cbd5e1 !important;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04) !important;
+        transition: all 0.2s ease-in-out !important;
     }
-    
-    /* 6. 折疊按鈕字體 */
+
+    div.stButton > button:hover {
+        transform: translateY(-2px) scale(1.01) !important;
+        border-color: #6366f1 !important;
+        box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25) !important;
+        background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%) !important;
+    }
+
+    div.stButton > button:active {
+        transform: translateY(1px) !important;
+    }
+
+    /* 主要按鈕 (如返回鍵) 的特色視覺 */
+    div.stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+        border: none !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35) !important;
+    }
+    div.stButton > button[kind="primary"] p {
+        color: #ffffff !important;
+    }
+
+    /* 6. 折疊卡片樣式 */
+    .stExpander {
+        border-radius: 14px !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+        border: 1px solid #e2e8f0 !important;
+    }
     .stExpander details summary p {
-        font-size: 18px !important;
-        font-weight: 500 !important;
+        font-size: 19px !important;
+        font-weight: 700 !important;
+        color: #4338ca !important;
     }
     
     /* 7. 🎯 強制手機版與電腦版皆維持 2 欄並列排版 */
@@ -161,12 +229,29 @@ if "管理員" in mode:
     st.title("👨‍💼 管理員後台管理 (實體檔案全站同步版)")
     st.markdown("---")
 
+    current_admin_pwd = get_admin_password()
+
     password = st.text_input(
         "🔑 請輸入管理員登入密碼：", type="password", key="admin_password"
     )
 
-    if password == "Chiho888":
-        st.success("🔓 認證成功！您現在可以更新歌單資料。")
+    if password == current_admin_pwd:
+        st.success("🔓 認證成功！您現在可以更新歌單與修改管理員密碼。")
+
+        # 🔐 新增修改密碼功能選單
+        with st.expander("🔐 變更管理員登入密碼", expanded=False):
+            new_pwd = st.text_input("請輸入新密碼：", type="password", key="new_pwd_input")
+            confirm_pwd = st.text_input("再次確認新密碼：", type="password", key="confirm_pwd_input")
+            if st.button("💾 儲存新密碼", key="save_pwd_btn"):
+                if not new_pwd.strip():
+                    st.warning("⚠️ 密碼不可為空！")
+                elif new_pwd != confirm_pwd:
+                    st.error("❌ 兩次輸入的密碼不一致！")
+                else:
+                    set_admin_password(new_pwd)
+                    st.success("🎉 管理員密碼已成功更新！後續登入請使用新密碼。")
+                    st.balloons()
+
         st.markdown(
             "### 📋 方式一：複製貼上更新（💯 實體寫入，手機 100% 絕對同步）"
         )
