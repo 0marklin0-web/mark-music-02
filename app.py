@@ -71,7 +71,7 @@ def set_admin_password(new_pwd):
     with open(PWD_FILE, "w", encoding="utf-8") as f:
         f.write(str(new_pwd).strip())
 
-# 🎯 核心樣式修正：打造活潑視覺風格，優化按鈕互動與行動端表現
+# 🎯 核心樣式修正：打造活潑視覺風格，優化按鈕互動與行動端表現，縮小選單與元件間隔
 st.markdown(
     """
     <style>
@@ -92,11 +92,11 @@ st.markdown(
     }
 
     h2 {
-        font-size: 24px !important;
+        font-size: 22px !important;
         font-weight: 800 !important;
         color: #1e293b !important;
-        margin-top: 12px !important;
-        margin-bottom: 8px !important;
+        margin-top: 8px !important;
+        margin-bottom: 4px !important;
     }
 
     /* 🎯 歌詞文字 (h3 標籤) 強制設為高對比深色 */
@@ -124,46 +124,58 @@ st.markdown(
         font-weight: 700 !important;
     }
     
-    /* 3. 按鈕內部文字樣式 */
+    /* 3. 按鈕內部文字與極致縮小間隔樣式 */
     div.stButton > button p {
-        font-size: 19px !important;
+        font-size: 17px !important;
         font-weight: 700 !important;
+        line-height: 1.2 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     
     /* 4. 🎯 Radio 選項容器與字體活潑化 */
     div.stRadio label p {
-        font-size: 20px !important;
+        font-size: 18px !important;
         font-weight: 800 !important;
         color: #0f172a !important;
     }
     
     div.stRadio > div {
         background-color: #ffffff;
-        padding: 8px 14px;
-        border-radius: 14px;
+        padding: 6px 12px;
+        border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     }
+
+    /* 🎯 縮小 Streamlit 元件容器上下間距與 Vertical Block 行距 */
+    div[data-testid="element-container"] {
+        margin-bottom: 0px !important;
+        padding-bottom: 0px !important;
+    }
+    div[data-testid="stVerticalBlock"] {
+        gap: 0.2rem !important;
+    }
     
-    /* 5. 🎯 核心按鈕動態與緊湊化修正 */
+    /* 5. 🎯 核心按鈕動態與高度/間隔極致緊湊化修正 */
     div.stButton > button {
-        min-height: 48px !important;
-        height: 48px !important;
-        margin-top: 2px !important;
-        margin-bottom: 2px !important;
+        min-height: 38px !important;
+        height: 38px !important;
+        margin-top: 1px !important;
+        margin-bottom: 1px !important;
         padding-top: 0px !important;
         padding-bottom: 0px !important;
-        border-radius: 12px !important;
+        border-radius: 10px !important;
         background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
         color: #1e293b !important;
         border: 1.5px solid #cbd5e1 !important;
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04) !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
         transition: all 0.2s ease-in-out !important;
     }
 
     div.stButton > button:hover {
-        transform: translateY(-2px) scale(1.01) !important;
+        transform: translateY(-1px) scale(1.01) !important;
         border-color: #6366f1 !important;
-        box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25) !important;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25) !important;
         background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%) !important;
     }
 
@@ -176,7 +188,7 @@ st.markdown(
         background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
         border: none !important;
         color: #ffffff !important;
-        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35) !important;
+        box-shadow: 0 3px 10px rgba(79, 70, 229, 0.35) !important;
     }
     div.stButton > button[kind="primary"] p {
         color: #ffffff !important;
@@ -190,15 +202,16 @@ st.markdown(
         border: 1px solid #e2e8f0 !important;
     }
     .stExpander details summary p {
-        font-size: 19px !important;
+        font-size: 18px !important;
         font-weight: 700 !important;
         color: #4338ca !important;
     }
     
-    /* 7. 🎯 強制手機版與電腦版皆維持 2 欄並列排版 */
+    /* 7. 🎯 強制手機版與電腦版皆維持 2 欄並列排版，並緊密欄間距 */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
+        gap: 0.3rem !important;
     }
     [data-testid="column"] {
         flex: 1 1 50% !important;
