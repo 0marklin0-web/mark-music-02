@@ -109,6 +109,17 @@ st.markdown(
     .stMarkdown p, div[data-testid="stMarkdownContainer"] p {
         color: #0f172a !important;
     }
+
+    /* 🎯 專門修正 st.success 提示框：強制背景為柔和亮綠底、深綠字，避免手機與深色模式下背景變深綠色導致文字看不見 */
+    div[data-testid="stAlert"] {
+        background-color: #dcfce7 !important;
+        border: 1.5px solid #86efac !important;
+        border-radius: 12px !important;
+    }
+    div[data-testid="stAlert"] p, div[data-testid="stAlert"] div, div[data-testid="stAlert"] span {
+        color: #14532d !important;
+        font-weight: 700 !important;
+    }
     
     /* 3. 按鈕內部文字樣式 */
     div.stButton > button p {
