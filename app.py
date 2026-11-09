@@ -96,6 +96,19 @@ st.markdown(
         margin-top: 12px !important;
         margin-bottom: 8px !important;
     }
+
+    /* 🎯 歌詞文字 (h3 標籤) 強制設為高對比深色，防止手機深色模式變灰白色 */
+    h3 {
+        font-size: 20px !important;
+        font-weight: 700 !important;
+        color: #0f172a !important;
+        line-height: 1.6 !important;
+    }
+
+    /* 🎯 強制指定所有內文 Markdown 段落文字顏色 */
+    .stMarkdown p, div[data-testid="stMarkdownContainer"] p {
+        color: #0f172a !important;
+    }
     
     /* 3. 按鈕內部文字樣式 */
     div.stButton > button p {
