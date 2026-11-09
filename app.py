@@ -412,6 +412,10 @@ else:
                 if i + j < len(singers):
                     singer = singers[i + j]
                     with cols[j]:
+                        st.markdown(
+                            f'<div id="item_singer_{singer}"></div>',
+                            unsafe_allow_html=True,
+                        )
                         is_active = (
                             st.session_state.filter_type == "singer"
                         ) and (st.session_state.chosen_filter_val == singer)
@@ -442,6 +446,10 @@ else:
                 if i + j < len(categories):
                     cat = categories[i + j]
                     with cols[j]:
+                        st.markdown(
+                            f'<div id="item_category_{cat}"></div>',
+                            unsafe_allow_html=True,
+                        )
                         is_active = (
                             st.session_state.filter_type == "category"
                         ) and (st.session_state.chosen_filter_val == cat)
@@ -466,16 +474,21 @@ else:
         st.markdown('<div id="section_songs"></div>', unsafe_allow_html=True)
         st.markdown("---")
 
-        # ⬅️ 返回上一頁按鈕
+        # ⬅️ 返回上一頁按鈕 (傳回原點選的歌手/分類項目位置)
         if st.button(
             "⬅️ 返回上一頁（選擇歌手/分類）",
             key="back_to_top_btn",
             use_container_width=True,
             type="primary",
         ):
+            target_val = st.session_state.chosen_filter_val
+            target_type = st.session_state.filter_type
             st.session_state.chosen_filter_val = None
             st.session_state.chosen_song = None
-            st.session_state.scroll_target = "section_top"
+            if target_val:
+                st.session_state.scroll_target = f"item_{target_type}_{target_val}"
+            else:
+                st.session_state.scroll_target = "section_top"
             st.rerun()
 
         filter_label = (
@@ -587,7 +600,7 @@ else:
                 setTimeout(function() {{
                     const el = window.parent.document.getElementById('{target_id}');
                     if (el) {{
-                        el.scrollIntoView({{ behavior: 'smooth' }});
+                        el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
                     }}
                 }}, 200);
             </script>
