@@ -99,7 +99,7 @@ st.markdown(
         margin-bottom: 4px !important;
     }
 
-    /* 🎯 歌詞文字 (h3 標籤) 強制設為高對比深色 */
+    /* 歌詞文字 (h3 標籤) 強制設為高對比深色 */
     h3 {
         font-size: 20px !important;
         font-weight: 700 !important;
@@ -107,19 +107,21 @@ st.markdown(
         line-height: 1.6 !important;
     }
 
-    /* 🎯 強制指定所有內文 Markdown 段落文字顏色 */
+    /* 強制指定所有內文 Markdown 段落文字顏色 */
     .stMarkdown p, div[data-testid="stMarkdownContainer"] p {
         color: #0f172a !important;
     }
 
-    /* 🎯 專門修正 st.success 提示框：完全淘汰綠色，改用寶藍/靛藍漸層搭配純白清晰文字 */
+    /* 專門修正 st.success 提示框：改用寶藍/靛藍漸層搭配純白清晰文字 */
     div[data-testid="stAlert"] {
         background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%) !important;
         border: none !important;
         border-radius: 12px !important;
         box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3) !important;
     }
-    div[data-testid="stAlert"] p, div[data-testid="stAlert"] div, div[data-testid="stAlert"] span {
+    div[data-testid="stAlert"] p,
+    div[data-testid="stAlert"] div, 
+    div[data-testid="stAlert"] span {
         color: #ffffff !important;
         font-weight: 700 !important;
     }
@@ -133,7 +135,7 @@ st.markdown(
         padding: 0 !important;
     }
     
-    /* 4. 🎯 Radio 選項容器與字體活潑化 */
+    /* 4. Radio 選項容器與字體活潑化 */
     div.stRadio label p {
         font-size: 18px !important;
         font-weight: 800 !important;
@@ -147,7 +149,7 @@ st.markdown(
         box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     }
 
-    /* 🎯 縮小 Streamlit 元件容器上下間距與 Vertical Block 行距 */
+    /* 縮小 Streamlit 元件容器上下間距與 Vertical Block 行距 */
     div[data-testid="element-container"] {
         margin-bottom: 0px !important;
         padding-bottom: 0px !important;
@@ -156,7 +158,7 @@ st.markdown(
         gap: 0.2rem !important;
     }
     
-    /* 5. 🎯 核心按鈕動態與高度/間隔極致緊湊化修正 */
+    /* 5. 核心按鈕動態與高度/間隔極致緊湊化修正 */
     div.stButton > button {
         min-height: 38px !important;
         height: 38px !important;
@@ -207,7 +209,7 @@ st.markdown(
         color: #4338ca !important;
     }
     
-    /* 7. 🎯 強制手機版與電腦版皆維持 2 欄並列排版，並緊密欄間距 */
+    /* 7. 強制手機版與電腦版皆維持 2 欄並列排版，並緊密欄間距 */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -292,9 +294,7 @@ if "管理員" in mode:
                     st.success("🎉 管理員密碼已成功更新！後續登入請使用新密碼。")
                     st.balloons()
 
-        st.markdown(
-            "### 📋 方式一：複製貼上更新（💯 實體寫入，手機 100% 絕對同步）"
-        )
+        st.markdown("### 📋 方式一：複製貼上更新（💯 實體寫入，手機 100% 絕對同步）")
         paste_data = st.text_area(
             "📥 請在此處貼上您從 Excel 複製的全部歌單內容：",
             height=200,
@@ -309,21 +309,12 @@ if "管理員" in mode:
                         io.StringIO(paste_data), sep=None, engine="python"
                     )
                     new_df.dropna(how="all", inplace=True)
-                    new_df.columns = [
-                        str(col).strip() for col in new_df.columns
-                    ]
+                    new_df.columns = [str(col).strip() for col in new_df.columns]
 
-                    required_cols = [
-                        "歌手名稱",
-                        "歌曲名稱",
-                        "歌詞",
-                        "分類",
-                    ]
+                    required_cols = ["歌手名稱", "歌曲名稱", "歌詞", "分類"]
                     if all(col in new_df.columns for col in required_cols):
                         for col in required_cols:
-                            new_df[col] = (
-                                new_df[col].fillna("").astype(str).str.strip()
-                            )
+                            new_df[col] = new_df[col].fillna("").astype(str).str.strip()
                         new_df[required_cols].to_csv(
                             DATA_FILE, index=False, encoding="utf-8"
                         )
@@ -331,9 +322,7 @@ if "管理員" in mode:
                         st.balloons()
                         st.rerun()
                     else:
-                        st.error(
-                            "❌ 欄位不符！請確認包含：歌手名稱、歌曲名稱、歌詞、分類"
-                        )
+                        st.error("❌ 欄位不符！請確認包含：歌手名稱、歌曲名稱、歌詞、分類")
                 except Exception as e:
                     st.error(f"❌ 解析失敗: {e}")
         st.table(df)
@@ -414,10 +403,27 @@ else:
         st.session_state.chosen_song = None
 
     if current_mode == "singer":
+        # 🎯 新增：歌手名稱文字搜尋輸入框
+        singer_search = st.text_input(
+            "🔍 搜尋歌手名稱：",
+            placeholder="請輸入歌手姓名關鍵字...",
+            key="singer_search_input",
+        )
+
         singers = sorted(
             [s for s in df["歌手名稱"].unique() if s.strip()],
             key=stroke_sort_key,
         )
+
+        # 依關鍵字進行過濾
+        if singer_search.strip():
+            singers = [
+                s for s in singers if singer_search.strip().lower() in s.lower()
+            ]
+
+        if not singers:
+            st.info("🔍 未找到符合關鍵字的歌手。")
+
         # 2 欄並列排版
         for i in range(0, len(singers), 2):
             cols = st.columns(2)
