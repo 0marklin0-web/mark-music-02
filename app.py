@@ -1,9 +1,7 @@
-import base64
 import io
 import locale
 import os
 import pandas as pd
-import requests
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -54,63 +52,14 @@ def stroke_sort_key(item):
     return (1, stroke, collate_key)
 
 
-# --- 雲端自動同步與永久保存機制（全自動，無需手動設定任何 Key/Token） ---
-REMOTE_SONGS_URL = "https://kvdb.io/StreetBuskerSongBook2026TW/my_songs_csv"
-REMOTE_PWD_URL = "https://kvdb.io/StreetBuskerSongBook2026TW/admin_password_txt"
-
-
-def sync_from_cloud():
-    """當主機重啟或休眠喚醒時，自動向雲端讀取最後一次發佈的歌單與密碼"""
-    try:
-        res = requests.get(REMOTE_SONGS_URL, timeout=3)
-        if res.status_code == 200 and res.text.strip():
-            with open("my_songs.csv", "w", encoding="utf-8") as f:
-                f.write(res.text)
-    except Exception:
-        pass
-
-    try:
-        res_pwd = requests.get(REMOTE_PWD_URL, timeout=3)
-        if res_pwd.status_code == 200 and res_pwd.text.strip():
-            with open("admin_password.txt", "w", encoding="utf-8") as f:
-                f.write(res_pwd.text.strip())
-    except Exception:
-        pass
-
-
-def save_persistently(songs_csv=None, pwd=None):
-    """寫入本地硬碟，並自動同步傳至雲端空間永久保存"""
-    if songs_csv is not None:
-        with open("my_songs.csv", "w", encoding="utf-8") as f:
-            f.write(songs_csv)
-        try:
-            requests.post(REMOTE_SONGS_URL, data=songs_csv.encode("utf-8"), timeout=4)
-        except Exception:
-            pass
-
-    if pwd is not None:
-        with open("admin_password.txt", "w", encoding="utf-8") as f:
-            f.write(str(pwd).strip())
-        try:
-            requests.post(REMOTE_PWD_URL, data=str(pwd).strip().encode("utf-8"), timeout=4)
-        except Exception:
-            pass
-
-
-# 程式開啟或伺服器重啟時，自動下載最新的歌單資料
-if "cloud_synced" not in st.session_state:
-    sync_from_cloud()
-    st.session_state.cloud_synced = True
-
-
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
 # --- 管理員密碼檔案寫入與讀取核心 ---
 PWD_FILE = "admin_password.txt"
 if not os.path.exists(PWD_FILE):
-    save_persistently(pwd="123456")
-
+    with open(PWD_FILE, "w", encoding="utf-8") as f:
+        f.write("123456")
 
 def get_admin_password():
     if os.path.exists(PWD_FILE):
@@ -118,10 +67,9 @@ def get_admin_password():
             return f.read().strip()
     return "123456"
 
-
 def set_admin_password(new_pwd):
-    save_persistently(pwd=str(new_pwd).strip())
-
+    with open(PWD_FILE, "w", encoding="utf-8") as f:
+        f.write(str(new_pwd).strip())
 
 # 🎯 核心樣式修正：打造活潑視覺風格，優化按鈕互動與行動端表現，縮小選單與元件間隔
 st.markdown(
@@ -306,8 +254,7 @@ if not os.path.exists(DATA_FILE):
             "我會披星戴月的想你\n我會奮不顧身地前進\n遠方煙火點燃你的心\n照亮我的一線生機",
         ],
     }
-    init_df = pd.DataFrame(default_data)
-    save_persistently(songs_csv=init_df.to_csv(index=False, encoding="utf-8"))
+    pd.DataFrame(default_data).to_csv(DATA_FILE, index=False, encoding="utf-8")
 
 # 讀取實體檔案
 df = pd.read_csv(DATA_FILE, encoding="utf-8").fillna("").astype(str)
@@ -368,9 +315,10 @@ if "管理員" in mode:
                     if all(col in new_df.columns for col in required_cols):
                         for col in required_cols:
                             new_df[col] = new_df[col].fillna("").astype(str).str.strip()
-                        csv_output = new_df[required_cols].to_csv(index=False, encoding="utf-8")
-                        save_persistently(songs_csv=csv_output)
-                        st.success("🎉 歌單寫入檔案與雲端備份！隔天重啟也不會消失！")
+                        new_df[required_cols].to_csv(
+                            DATA_FILE, index=False, encoding="utf-8"
+                        )
+                        st.success("🎉 歌單寫入硬碟檔案！")
                         st.balloons()
                         st.rerun()
                     else:
@@ -395,14 +343,7 @@ else:
             </div>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
             <script>
-                let currentUrl = window.location.href;
-                try {
-                    if (window.parent && window.parent.location.href) {
-                        currentUrl = window.parent.location.href;
-                    }
-                } catch(e) {
-                    currentUrl = window.location.href;
-                }
+                const currentUrl = window.parent.location.href;
                 const container = document.getElementById('qrcode-container');
                 container.innerHTML = '';
                 
@@ -676,17 +617,9 @@ else:
             f"""
             <script>
                 setTimeout(function() {{
-                    try {{
-                        const doc = window.parent ? window.parent.document : document;
-                        const el = doc.getElementById('{target_id}');
-                        if (el) {{
-                            el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
-                        }}
-                    }} catch(e) {{
-                        const el = document.getElementById('{target_id}');
-                        if (el) {{
-                            el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
-                        }}
+                    const el = window.parent.document.getElementById('{target_id}');
+                    if (el) {{
+                        el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
                     }}
                 }}, 200);
             </script>
