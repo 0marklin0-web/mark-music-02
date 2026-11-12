@@ -3,6 +3,7 @@ import io
 import json
 import locale
 import os
+import re
 import urllib.error
 import urllib.request
 import pandas as pd
@@ -59,30 +60,73 @@ def stroke_sort_key(item):
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# --- 雲端永久儲存同步核心 (GitHub API) ---
+# --- 雲端永久儲存同步核心 (GitHub API 自動偵測與同步) ---
 PWD_FILE = "admin_password.txt"
 DATA_FILE = "my_songs.csv"
 
 
-def _get_github_config():
+def _detect_git_info():
+    repo = ""
+    branch = ""
     try:
-        token = str(st.secrets.get("GITHUB_TOKEN", "")).strip()
-        repo = str(st.secrets.get("GITHUB_REPO", "")).strip()
-        branch = str(st.secrets.get("GITHUB_BRANCH", "")).strip()
-        if token and repo:
-            return token, repo, branch
+        if os.path.exists(".git/config"):
+            with open(".git/config", "r", encoding="utf-8", errors="ignore") as f:
+                cfg = f.read()
+            m = re.search(r"github\.com[:/]([^/\s]+/[^/\s]+?)(?:\.git)?\s*$", cfg, re.MULTILINE)
+            if m:
+                repo = m.group(1).strip()
+        if os.path.exists(".git/HEAD"):
+            with open(".git/HEAD", "r", encoding="utf-8", errors="ignore") as f:
+                head = f.read().strip()
+            if head.startswith("ref: refs/heads/"):
+                branch = head.replace("ref: refs/heads/", "").strip()
     except Exception:
         pass
-    return None, None, None
+    return repo, branch
 
 
-def _github_request(url, token, method="GET", data=None):
+def _get_github_config():
+    token = ""
+    repo = ""
+    branch = ""
+    try:
+        for key in ("GITHUB_TOKEN", "github_token", "TOKEN", "token"):
+            if key in st.secrets and str(st.secrets[key]).strip():
+                token = str(st.secrets[key]).strip()
+                break
+        for key in ("GITHUB_REPO", "github_repo", "REPO", "repo"):
+            if key in st.secrets and str(st.secrets[key]).strip():
+                repo = str(st.secrets[key]).strip()
+                break
+        for key in ("GITHUB_BRANCH", "github_branch", "BRANCH", "branch"):
+            if key in st.secrets and str(st.secrets[key]).strip():
+                branch = str(st.secrets[key]).strip()
+                break
+    except Exception:
+        pass
+
+    if not token:
+        token = os.environ.get("GITHUB_TOKEN", "").strip()
+    if not token:
+        token = str(st.session_state.get("runtime_github_token", "")).strip()
+
+    auto_repo, auto_branch = _detect_git_info()
+    if not repo:
+        repo = os.environ.get("GITHUB_REPO", "").strip() or auto_repo
+    if not branch:
+        branch = os.environ.get("GITHUB_BRANCH", "").strip() or auto_branch
+
+    return token, repo, branch
+
+
+def _github_request(url, token="", method="GET", data=None):
     headers = {
-        "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
         "User-Agent": "Streamlit-Songbook-App",
     }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     body = json.dumps(data).encode("utf-8") if data is not None else None
     req = urllib.request.Request(url, data=body, headers=headers, method=method)
     with urllib.request.urlopen(req, timeout=10) as resp:
@@ -92,13 +136,16 @@ def _github_request(url, token, method="GET", data=None):
 def _resolve_branch(token, repo, branch):
     if branch:
         return branch
-    repo_info = _github_request(f"https://api.github.com/repos/{repo}", token)
-    return repo_info.get("default_branch", "main")
+    try:
+        repo_info = _github_request(f"https://api.github.com/repos/{repo}", token)
+        return repo_info.get("default_branch", "main")
+    except Exception:
+        return "main"
 
 
 def pull_from_github(filepath):
     token, repo, branch = _get_github_config()
-    if not token or not repo:
+    if not repo:
         return False
     try:
         branch = _resolve_branch(token, repo, branch)
@@ -111,14 +158,27 @@ def pull_from_github(filepath):
                 f.write(raw_bytes)
             return True
     except Exception:
-        pass
+        try:
+            branch = branch or "main"
+            raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{filepath}"
+            req = urllib.request.Request(raw_url, headers={"User-Agent": "Streamlit-Songbook-App"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                raw_bytes = resp.read()
+                if raw_bytes:
+                    with open(filepath, "wb") as f:
+                        f.write(raw_bytes)
+                    return True
+        except Exception:
+            pass
     return False
 
 
 def push_to_github(filepath, commit_msg="Sync data"):
     token, repo, branch = _get_github_config()
-    if not token or not repo:
-        return False, "尚未在 Streamlit Secrets 設定 GITHUB_TOKEN 與 GITHUB_REPO"
+    if not token:
+        return False, "請在上方「☁️ 雲端永久儲存設定」或 Streamlit Secrets 填入 GITHUB_TOKEN"
+    if not repo:
+        return False, "無法自動偵測 GitHub 倉庫名稱，請在 Streamlit Secrets 設定 GITHUB_REPO"
     if not os.path.exists(filepath):
         return False, f"找不到檔案 {filepath}"
     try:
@@ -378,6 +438,29 @@ if "管理員" in mode:
 
     if password == current_admin_pwd:
         st.success("🔓 認證成功！您現在可以更新歌單與修改管理員密碼。")
+
+        _cfg_token, _cfg_repo, _ = _get_github_config()
+        if not _cfg_token:
+            with st.expander("☁️ 雲端永久儲存設定（首次設定後重啟永不遺失）", expanded=True):
+                st.caption(
+                    f"已自動偵測 GitHub 倉庫：`{_cfg_repo or '未偵測到'}`。"
+                    "請在 Streamlit Cloud 後台 Secrets 加入 `GITHUB_TOKEN`，或先在此貼上金鑰以立即同步："
+                )
+                input_token = st.text_input(
+                    "GitHub Personal Access Token (ghp_...)：",
+                    type="password",
+                    value=st.session_state.get("runtime_github_token", ""),
+                    key="github_token_ui_input",
+                )
+                if input_token.strip():
+                    st.session_state.runtime_github_token = input_token.strip()
+                    if st.button("☁️ 立即將目前歌單與密碼永久同步至 GitHub", key="sync_now_btn"):
+                        ok1, msg1 = push_to_github(PWD_FILE, "Sync admin password")
+                        ok2, msg2 = push_to_github(DATA_FILE, "Sync song list")
+                        if ok1 and ok2:
+                            st.success("🎉 已成功永久寫入 GitHub！建議將此 Token 存入 Streamlit Secrets 以免主機重啟後需重填。")
+                        else:
+                            st.error(f"❌ 同步失敗：{msg2 if not ok2 else msg1}")
 
         # 🔐 新增修改密碼功能選單
         with st.expander("🔐 變更管理員登入密碼", expanded=False):
