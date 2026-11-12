@@ -1,6 +1,10 @@
+import base64
 import io
+import json
 import locale
 import os
+import urllib.error
+import urllib.request
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
@@ -55,11 +59,106 @@ def stroke_sort_key(item):
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
 
-# --- 管理員密碼檔案寫入與讀取核心 ---
+# --- 雲端永久儲存同步核心 (GitHub API) ---
 PWD_FILE = "admin_password.txt"
+DATA_FILE = "my_songs.csv"
+
+
+def _get_github_config():
+    try:
+        token = str(st.secrets.get("GITHUB_TOKEN", "")).strip()
+        repo = str(st.secrets.get("GITHUB_REPO", "")).strip()
+        branch = str(st.secrets.get("GITHUB_BRANCH", "")).strip()
+        if token and repo:
+            return token, repo, branch
+    except Exception:
+        pass
+    return None, None, None
+
+
+def _github_request(url, token, method="GET", data=None):
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "Streamlit-Songbook-App",
+    }
+    body = json.dumps(data).encode("utf-8") if data is not None else None
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _resolve_branch(token, repo, branch):
+    if branch:
+        return branch
+    repo_info = _github_request(f"https://api.github.com/repos/{repo}", token)
+    return repo_info.get("default_branch", "main")
+
+
+def pull_from_github(filepath):
+    token, repo, branch = _get_github_config()
+    if not token or not repo:
+        return False
+    try:
+        branch = _resolve_branch(token, repo, branch)
+        url = f"https://api.github.com/repos/{repo}/contents/{filepath}?ref={branch}"
+        res = _github_request(url, token)
+        content_b64 = res.get("content", "")
+        if content_b64:
+            raw_bytes = base64.b64decode(content_b64)
+            with open(filepath, "wb") as f:
+                f.write(raw_bytes)
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def push_to_github(filepath, commit_msg="Sync data"):
+    token, repo, branch = _get_github_config()
+    if not token or not repo:
+        return False, "尚未在 Streamlit Secrets 設定 GITHUB_TOKEN 與 GITHUB_REPO"
+    if not os.path.exists(filepath):
+        return False, f"找不到檔案 {filepath}"
+    try:
+        branch = _resolve_branch(token, repo, branch)
+        url = f"https://api.github.com/repos/{repo}/contents/{filepath}"
+        sha = None
+        try:
+            existing = _github_request(f"{url}?ref={branch}", token)
+            sha = existing.get("sha")
+        except urllib.error.HTTPError as e:
+            if e.code != 404:
+                raise
+
+        with open(filepath, "rb") as f:
+            content_b64 = base64.b64encode(f.read()).decode("utf-8")
+
+        payload = {
+            "message": commit_msg,
+            "content": content_b64,
+            "branch": branch,
+        }
+        if sha:
+            payload["sha"] = sha
+
+        _github_request(url, token, method="PUT", data=payload)
+        return True, "成功永久同步至 GitHub"
+    except Exception as e:
+        return False, str(e)
+
+
+if "github_synced" not in st.session_state:
+    pull_from_github(PWD_FILE)
+    pull_from_github(DATA_FILE)
+    st.session_state.github_synced = True
+
+# --- 管理員密碼檔案寫入與讀取核心 ---
 if not os.path.exists(PWD_FILE):
     with open(PWD_FILE, "w", encoding="utf-8") as f:
         f.write("123456")
+    push_to_github(PWD_FILE, "Initialize admin password")
 
 def get_admin_password():
     if os.path.exists(PWD_FILE):
@@ -70,6 +169,7 @@ def get_admin_password():
 def set_admin_password(new_pwd):
     with open(PWD_FILE, "w", encoding="utf-8") as f:
         f.write(str(new_pwd).strip())
+    return push_to_github(PWD_FILE, "Update admin password")
 
 # 🎯 核心樣式修正：打造活潑視覺風格，優化按鈕互動與行動端表現，縮小選單與元件間隔
 st.markdown(
@@ -226,8 +326,6 @@ st.markdown(
 )
 
 # --- 2. 實體檔案同步核心 ---
-DATA_FILE = "my_songs.csv"
-
 # 初始化：如果雲端還沒有這個檔案，先建立一份預設資料檔案
 if not os.path.exists(DATA_FILE):
     default_data = {
@@ -255,6 +353,7 @@ if not os.path.exists(DATA_FILE):
         ],
     }
     pd.DataFrame(default_data).to_csv(DATA_FILE, index=False, encoding="utf-8")
+    push_to_github(DATA_FILE, "Initialize default songs")
 
 # 讀取實體檔案
 df = pd.read_csv(DATA_FILE, encoding="utf-8").fillna("").astype(str)
@@ -290,9 +389,12 @@ if "管理員" in mode:
                 elif new_pwd != confirm_pwd:
                     st.error("❌ 兩次輸入的密碼不一致！")
                 else:
-                    set_admin_password(new_pwd)
-                    st.success("🎉 管理員密碼已成功更新！後續登入請使用新密碼。")
-                    st.balloons()
+                    sync_ok, sync_msg = set_admin_password(new_pwd)
+                    if sync_ok:
+                        st.success("🎉 管理員密碼已成功更新並永久儲存！後續登入請使用新密碼。")
+                        st.balloons()
+                    else:
+                        st.warning(f"⚠️ 本機密碼已更新，但雲端永久同步未完成：{sync_msg}")
 
         st.markdown("### 📋 方式一：複製貼上更新（💯 實體寫入，手機 100% 絕對同步）")
         paste_data = st.text_area(
@@ -318,9 +420,13 @@ if "管理員" in mode:
                         new_df[required_cols].to_csv(
                             DATA_FILE, index=False, encoding="utf-8"
                         )
-                        st.success("🎉 歌單寫入硬碟檔案！")
-                        st.balloons()
-                        st.rerun()
+                        sync_ok, sync_msg = push_to_github(DATA_FILE, "Update song list")
+                        if sync_ok:
+                            st.success("🎉 歌單已永久寫入雲端與硬碟檔案！")
+                            st.balloons()
+                            st.rerun()
+                        else:
+                            st.warning(f"⚠️ 本機歌單已更新，但雲端永久同步未完成：{sync_msg}")
                     else:
                         st.error("❌ 欄位不符！請確認包含：歌手名稱、歌曲名稱、歌詞、分類")
                 except Exception as e:
@@ -439,190 +545,3 @@ else:
                             st.session_state.filter_type == "singer"
                         ) and (st.session_state.chosen_filter_val == singer)
                         label_text = (
-                            f"👉 【 {singer} 】 👈"
-                            if is_active
-                            else f"👤 {singer}"
-                        )
-                        if st.button(
-                            label_text,
-                            key=f"btn_singer_{singer}",
-                            use_container_width=True,
-                        ):
-                            st.session_state.filter_type = "singer"
-                            st.session_state.chosen_filter_val = singer
-                            st.session_state.chosen_song = None
-                            st.session_state.scroll_target = "section_songs"
-                            st.rerun()
-
-    else:
-        categories = sorted(
-            [c for c in df["分類"].unique() if c.strip()], key=stroke_sort_key
-        )
-        # 2 欄並列排版
-        for i in range(0, len(categories), 2):
-            cols = st.columns(2)
-            for j in range(2):
-                if i + j < len(categories):
-                    cat = categories[i + j]
-                    with cols[j]:
-                        st.markdown(
-                            f'<div id="item_category_{cat}"></div>',
-                            unsafe_allow_html=True,
-                        )
-                        is_active = (
-                            st.session_state.filter_type == "category"
-                        ) and (st.session_state.chosen_filter_val == cat)
-                        label_text = (
-                            f"👉 【 {cat} 】 👈"
-                            if is_active
-                            else f"📁 {cat}"
-                        )
-                        if st.button(
-                            label_text,
-                            key=f"btn_cat_{cat}",
-                            use_container_width=True,
-                        ):
-                            st.session_state.filter_type = "category"
-                            st.session_state.chosen_filter_val = cat
-                            st.session_state.chosen_song = None
-                            st.session_state.scroll_target = "section_songs"
-                            st.rerun()
-
-    # 第二層：如果選了歌手或分類，顯示對應的歌曲清單
-    if st.session_state.chosen_filter_val:
-        st.markdown('<div id="section_songs"></div>', unsafe_allow_html=True)
-        st.markdown("---")
-
-        # ⬅️ 返回上一頁按鈕 (傳回原點選的歌手/分類項目位置)
-        if st.button(
-            "⬅️ 返回上一頁（選擇歌手/分類）",
-            key="back_to_top_btn",
-            use_container_width=True,
-            type="primary",
-        ):
-            target_val = st.session_state.chosen_filter_val
-            target_type = st.session_state.filter_type
-            st.session_state.chosen_filter_val = None
-            st.session_state.chosen_song = None
-            if target_val:
-                st.session_state.scroll_target = f"item_{target_type}_{target_val}"
-            else:
-                st.session_state.scroll_target = "section_top"
-            st.rerun()
-
-        filter_label = (
-            "歌手" if st.session_state.filter_type == "singer" else "分類"
-        )
-        st.markdown(
-            f"## 🎶 2. 【{st.session_state.chosen_filter_val}】({filter_label}) 的歌曲清單："
-        )
-
-        if st.session_state.filter_type == "singer":
-            filtered_df = df[
-                df["歌手名稱"] == st.session_state.chosen_filter_val
-            ].copy()
-        else:
-            filtered_df = df[
-                df["分類"] == st.session_state.chosen_filter_val
-            ].copy()
-
-        # 歌曲名稱依筆劃順序排序
-        filtered_df["_stroke_key"] = filtered_df["歌曲名稱"].apply(
-            stroke_sort_key
-        )
-        filtered_df = filtered_df.sort_values("_stroke_key").drop(
-            columns=["_stroke_key"]
-        )
-
-        for idx, row in filtered_df.iterrows():
-            song = row["歌曲名稱"]
-            singer_name = row["歌手名稱"]
-            is_selected = st.session_state.chosen_song == song
-
-            display_title = (
-                f"《 {song} 》{singer_name}"
-                if st.session_state.filter_type == "category"
-                else f"《 {song} 》"
-            )
-            label_song = (
-                f"🔥 正在播放：{display_title}"
-                if is_selected
-                else f"🎵 {display_title}"
-            )
-
-            if st.button(
-                label_song,
-                key=f"btn_song_{idx}_{song}",
-                use_container_width=True,
-            ):
-                st.session_state.chosen_song = song
-                st.session_state.chosen_singer_for_song = singer_name
-                st.session_state.scroll_target = "section_lyrics"
-                st.rerun()
-
-    # 第三層：如果選了歌曲，設定錨點並顯示歌詞
-    if st.session_state.chosen_song:
-        st.markdown('<div id="section_lyrics"></div>', unsafe_allow_html=True)
-        st.markdown("---")
-
-        # ⬅️ 返回上一頁按鈕
-        if st.button(
-            "⬅️ 返回上一頁（歌曲清單）",
-            key="back_to_songs_btn",
-            use_container_width=True,
-            type="primary",
-        ):
-            st.session_state.chosen_song = None
-            st.session_state.scroll_target = "section_songs"
-            st.rerun()
-
-        target_singer = getattr(
-            st.session_state,
-            "chosen_singer_for_song",
-            st.session_state.chosen_filter_val,
-        )
-        song_info = df[
-            (df["歌曲名稱"] == st.session_state.chosen_song)
-            & (df["歌手名稱"] == target_singer)
-        ]
-
-        if song_info.empty:
-            song_info = df[df["歌曲名稱"] == st.session_state.chosen_song]
-
-        if not song_info.empty:
-            actual_singer = song_info.iloc[0]["歌手名稱"]
-            lyrics_text = song_info.iloc[0]["歌詞"]
-            song_cat = song_info.iloc[0]["分類"]
-
-            st.markdown(f"# 🎤 {actual_singer}")
-            st.markdown(f"# 《 {st.session_state.chosen_song} 》")
-            if song_cat.strip():
-                st.caption(f"📁 歌曲分類：{song_cat}")
-
-            st.markdown("---")
-            st.success("🎵 完整歌詞如下（請向下捲動閱讀）：")
-
-            for line in str(lyrics_text).split("\n"):
-                if line.strip():
-                    st.markdown(f"### {line}")
-                else:
-                    st.write("")  # 空行
-            st.markdown("---")
-
-    # 執行自動平滑滾動的邏輯
-    if st.session_state.scroll_target:
-        target_id = st.session_state.scroll_target
-        st.session_state.scroll_target = None  # 清除狀態避免重複觸發
-        components.html(
-            f"""
-            <script>
-                setTimeout(function() {{
-                    const el = window.parent.document.getElementById('{target_id}');
-                    if (el) {{
-                        el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
-                    }}
-                }}, 200);
-            </script>
-            """,
-            height=0,
-        )
