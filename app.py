@@ -524,6 +524,8 @@ else:
     st.caption("✨ 歡迎現場的朋友！點選下方大按鈕看歌詞！")
     st.markdown("---")
 
+    st.markdown('歡迎加入並追蹤「彈唱Mark」IG [(連結)](https://www.instagram.com/mark.lin.tw?xtok=MXd0OHh4Y2o5MXFxNQ%3D%3D&utm_source=qr)呦!')
+
     # 預設展開 QR Code (expanded=True)
     with st.expander("📱 點我展開現場專用 QR Code", expanded=True):
         qr_component_code = """
