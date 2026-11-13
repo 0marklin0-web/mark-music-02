@@ -520,7 +520,7 @@ if "管理員" in mode:
 
 # --- 5. 觀眾模式 📱 ---
 else:
-    st.title("🎸 現場 Live 點歌與動態歌詞本")
+    st.title("🎸 「彈唱Mark」點歌單(內含歌詞)")
     st.caption("✨ 歡迎現場的朋友！點選下方大按鈕看歌詞！")
     st.markdown("---")
 
