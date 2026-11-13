@@ -58,7 +58,7 @@ def stroke_sort_key(item):
 
 
 # --- 1. 頁面基本設定 ---
-st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered")
+st.set_page_config(page_title="🎸 街頭藝人線上點歌本", layout="centered", initial_sidebar_state="expanded")
 
 # --- 雲端永久儲存同步核心 (GitHub API 自動偵測與同步) ---
 PWD_FILE = "admin_password.txt"
@@ -235,10 +235,20 @@ def set_admin_password(new_pwd):
 st.markdown(
     """
     <style>
-    /* 1. 隱藏 Streamlit 右上角選單中可能暴露 / 原始碼檢視按鈕 */
+    /* 1. 隱藏 Streamlit 右上角選單中可能暴露 / 原始碼檢視按鈕，並固定顯示左側選單 */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
+    header {background: transparent !important;}
+    [data-testid="stToolbar"] {visibility: hidden;}
+    [data-testid="stSidebarCollapseButton"] {display: none !important;}
+    @media (min-width: 768px) {
+        section[data-testid="stSidebar"] {
+            transform: none !important;
+            visibility: visible !important;
+            width: 21rem !important;
+            min-width: 21rem !important;
+        }
+    }
     
     /* 背景視覺漸層與主題優化 */
     .stApp {
