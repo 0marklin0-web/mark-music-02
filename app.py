@@ -521,10 +521,10 @@ if "管理員" in mode:
 # --- 5. 觀眾模式 📱 ---
 else:
     st.title("🎸 「彈唱Mark」點歌單(內含歌詞)")
-    st.caption("✨ 歡迎現場的朋友！點選下方大按鈕看歌詞！")
+    st.caption("✨ 歡迎現場的朋友！點選下方歌單+看歌詞！")
     st.markdown("---")
 
-    st.markdown('<p style="font-size: 125%;">歡迎加入並追蹤「彈唱Mark」IG <a href="https://www.instagram.com/mark.lin.tw?xtok=MXd0OHh4Y2o5MXFxNQ%3D%3D&utm_source=qr" target="_blank">(連結)</a>呦!</p>', unsafe_allow_html=True)
+    st.markdown('<p style="font-size: 125%;">歡迎追蹤「彈唱Mark」IG <a href="https://www.instagram.com/mark.lin.tw?xtok=MXd0OHh4Y2o5MXFxNQ%3D%3D&utm_source=qr" target="_blank">(連結)</a>呦!</p>', unsafe_allow_html=True)
 
     # 預設展開 QR Code (expanded=True)
     with st.expander("📱 點我展開現場專用 QR Code", expanded=True):
